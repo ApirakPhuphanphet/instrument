@@ -11,6 +11,52 @@ async function saveTransaction(userid, instrumentId, type, unixTimestamp = null)
     return result.rows[0];
 }
 
+async function handleTransaction(req, res, type) {
+    const { lfuid, hfuid, unixTime } = req.body;
+
+    if (!lfuid || !hfuid) {
+        return res.status(400).json({
+            message: 'LFUID and HFUID are required',
+            data: req.body
+        });
+    }
+
+    try {
+        const userResult = await pool.query(
+            'SELECT id FROM "users" WHERE rfid = $1',
+            [String(lfuid)]
+        );
+        if (userResult.rows.length === 0) {
+            console.log(`[POST /${type}] User RFID not found: ${lfuid}`);
+            return res.status(404).json({ message: 'User RFID not found', data: req.body });
+        }
+
+        const instrumentResult = await pool.query(
+            'SELECT id FROM instrument WHERE rfid = $1',
+            [String(hfuid)]
+        );
+        if (instrumentResult.rows.length === 0) {
+            console.log(`[POST /${type}] Instrument RFID not found: ${hfuid}`);
+            return res.status(404).json({ message: 'Instrument RFID not found', data: req.body });
+        }
+
+        const transaction = await saveTransaction(
+            userResult.rows[0].id,
+            instrumentResult.rows[0].id,
+            type,
+            unixTime
+        );
+        console.log(`[POST /${type}] Transaction recorded:`, transaction);
+        return res.status(200).json({
+            message: `${type.charAt(0).toUpperCase()}${type.slice(1)} POST success`,
+            data: transaction
+        });
+    } catch (error) {
+        console.error(`[POST /${type}] Error processing request:`, error.message);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+}
+
 async function insertRfid(req, res, type) {
     const rfidId = req.body[type.toUpperCase()] || req.body[type] || req.body.rfid;
 
@@ -25,7 +71,9 @@ async function insertRfid(req, res, type) {
         const result = await pool.query(
             `INSERT INTO rfid (id, type)
              VALUES ($1, $2::rfid_type)
-             ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type
+             ON CONFLICT (id) DO UPDATE SET
+                 type = EXCLUDED.type,
+                 updatedat = NOW()
              RETURNING *`,
             [String(rfidId), type.toUpperCase()]
         );
@@ -77,4 +125,35 @@ async function checkRfid(req, res, type) {
     }
 }
 
-module.exports = { saveTransaction, insertRfid, checkRfid };
+async function loadRfid(req, res, type) {
+    const timestamp = Number(req.query.timestamp || 0);
+
+    if (!Number.isFinite(timestamp)) {
+        return res.status(400).json({
+            message: 'timestamp must be a valid Unix timestamp',
+            data: []
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT id, type, updatedat AS "updatedAt"
+             FROM rfid
+             WHERE type = $1::rfid_type
+               AND updatedat > TO_TIMESTAMP($2)
+             ORDER BY updatedat ASC`,
+            [type.toUpperCase(), timestamp]
+        );
+
+        console.log(`[GET /${type.toUpperCase()}/load] Loaded RFID records:`, result.rows);
+        return res.status(200).json({
+            ids: result.rows.map((rfid) => rfid.id),
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(`[GET /${type.toUpperCase()}/load] Error loading RFID:`, error.message);
+        return res.status(500).json({ message: 'Internal server error', data: [] });
+    }
+}
+
+module.exports = { saveTransaction, handleTransaction, insertRfid, checkRfid, loadRfid };
