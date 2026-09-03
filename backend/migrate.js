@@ -25,7 +25,7 @@ async function migrate() {
         await client.query(`
             DO $$
             BEGIN
-                CREATE TYPE rfid_type AS ENUM ('lf', 'hf');
+                CREATE TYPE rfid_type AS ENUM ('LF', 'HF');
             EXCEPTION
                 WHEN duplicate_object THEN NULL;
             END $$;
