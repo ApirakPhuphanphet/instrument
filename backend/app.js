@@ -21,44 +21,98 @@ app.post('/', (req, res) => {
     res.status(200).json({ message: "Root POST success", data: req.body });
 });
 
+/**
+ * Save a borrow transaction using the columns defined in migrate.js.
+ */
+async function saveTransaction(userid, instrumentId, type, unixTimestamp = null) {
+    const result = await pool.query(
+        `INSERT INTO "transaction" (user_id, instrument_id, type, timestamp)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [String(userid), String(instrumentId), type, unixTimestamp ? new Date(unixTimestamp * 1000) : null]
+    );
+
+    return result.rows[0];
+}
+
 // POST /borrow
-app.post('/borrow', (req, res) => {
+app.post('/borrow', async (req, res) => {
     console.log('[POST /borrow] Body received:', req.body);
-    const { userRfid, instrumentRfid, unixTime } = req.body;
-    // check if userRfid and instrumentRfid exist in the database
-    pool.query('SELECT * FROM "user" WHERE rfid = $1', [userRfid])
-        .then(userResult => {
-            if (userResult.rows.length === 0) {
-                console.log(`[POST /borrow] User RFID not found: ${userRfid}`);
-                return res.status(404).json({ message: "User RFID not found", data: req.body });
-            }
-            return pool.query('SELECT * FROM instrument WHERE rfid = $1', [instrumentRfid]);
-        })
-        .then(instrumentResult => {
-            if (instrumentResult.rows.length === 0) {
-                console.log(`[POST /borrow] Instrument RFID not found: ${instrumentRfid}`);
-                return res.status(404).json({ message: "Instrument RFID not found", data: req.body });
-            }
-            // If both exist, insert into transaction table
-            return pool.query(
-                'INSERT INTO "transaction" (userRfid, instrumentRfid) VALUES ($1, $2) RETURNING *',
-                [userRfid, instrumentRfid]
-            );
-        })
-        .then(transactionResult => {
-            console.log('[POST /borrow] Transaction recorded:', transactionResult.rows[0]);
-            res.status(200).json({ message: "Borrow POST success", data: transactionResult.rows[0] });
-        })
-        .catch(error => {
-            console.error('[POST /borrow] Error processing request:', error.message);
-            res.status(500).json({ message: "Internal server error", error: error.message });
+    const { lfuid, hfuid, unixTime } = req.body;
+
+    if (!lfuid || !hfuid) {
+        return res.status(400).json({
+            message: 'LFUID and HFUID are required',
+            data: req.body
         });
+    }
+
+    try {
+        const userResult = await pool.query(
+            'SELECT id FROM "users" WHERE rfid = $1',
+            [String(lfuid)]
+        );
+        if (userResult.rows.length === 0) {
+            console.log(`[POST /borrow] User RFID not found: ${lfuid}`);
+            return res.status(404).json({ message: 'User RFID not found', data: req.body });
+        }
+
+        const instrumentResult = await pool.query(
+            'SELECT id FROM instrument WHERE rfid = $1',
+            [String(hfuid)]
+        );
+        if (instrumentResult.rows.length === 0) {
+            console.log(`[POST /borrow] Instrument RFID not found: ${hfuid}`);
+            return res.status(404).json({ message: 'Instrument RFID not found', data: req.body });
+        }
+
+        const transaction = await saveTransaction(userResult.rows[0].id, instrumentResult.rows[0].id, 'borrow', unixTime);
+        console.log('[POST /borrow] Transaction recorded:', transaction);
+        return res.status(200).json({ message: 'Borrow POST success', data: transaction });
+    } catch (error) {
+        console.error('[POST /borrow] Error processing request:', error.message);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
 });
 
 // POST /return
-app.post('/return', (req, res) => {
+app.post('/return', async (req, res) => {
     console.log('[POST /return] Body received:', req.body);
-    res.status(200).json({ message: "Return POST success", data: req.body });
+    const { lfuid, hfuid, unixTime } = req.body;
+
+    if (!lfuid || !hfuid) {
+        return res.status(400).json({
+            message: 'LFUID and HFUID are required',
+            data: req.body
+        });
+    }
+
+    try {
+        const userResult = await pool.query(
+            'SELECT id FROM "users" WHERE rfid = $1',
+            [String(lfuid)]
+        );
+        if (userResult.rows.length === 0) {
+            console.log(`[POST /return] User RFID not found: ${lfuid}`);
+            return res.status(404).json({ message: 'User RFID not found', data: req.body });
+        }
+
+        const instrumentResult = await pool.query(
+            'SELECT id FROM instrument WHERE rfid = $1',
+            [String(hfuid)]
+        );
+        if (instrumentResult.rows.length === 0) {
+            console.log(`[POST /return] Instrument RFID not found: ${hfuid}`);
+            return res.status(404).json({ message: 'Instrument RFID not found', data: req.body });
+        }
+
+        const transaction = await saveTransaction(userResult.rows[0].id, instrumentResult.rows[0].id, 'return', unixTime);
+        console.log('[POST /return] Transaction recorded:', transaction);
+        return res.status(200).json({ message: 'Return POST success', data: transaction });
+    } catch (error) {
+        console.error('[POST /return] Error processing request:', error.message);
+        return res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
 });
 
 /**
