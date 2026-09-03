@@ -103,7 +103,12 @@ async function checkRfid(req, res, type) {
         const result = await pool.query(
             `SELECT id, type
              FROM rfid
-             WHERE id = $1 AND type = $2::rfid_type`,
+             WHERE id = $1
+               AND type = $2::rfid_type
+               AND (
+                   EXISTS (SELECT 1 FROM "users" WHERE "users".rfid = rfid.id)
+                   OR EXISTS (SELECT 1 FROM instrument WHERE instrument.rfid = rfid.id)
+               )`,
             [String(rfidId), type.toUpperCase()]
         );
 
@@ -141,6 +146,10 @@ async function loadRfid(req, res, type) {
              FROM rfid
              WHERE type = $1::rfid_type
                AND updatedat > TO_TIMESTAMP($2)
+               AND (
+                   EXISTS (SELECT 1 FROM "users" WHERE "users".rfid = rfid.id)
+                   OR EXISTS (SELECT 1 FROM instrument WHERE instrument.rfid = rfid.id)
+               )
              ORDER BY updatedat ASC`,
             [type.toUpperCase(), timestamp]
         );
