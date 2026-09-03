@@ -2,7 +2,13 @@ require('dotenv').config();
 
 const express = require('express');
 const pool = require('./db');
-const { handleTransaction, insertRfid, checkRfid, loadRfid } = require('./functions');
+const {
+    handleTransaction,
+    insertRfid,
+    checkRfid,
+    loadRfid,
+    loadDeletedRfid
+} = require('./functions');
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -89,15 +95,13 @@ app.get('/LF/load', (req, res) => {
 app.get('/HF/load-deleted', (req, res) => {
     const unixTime = req.query.timestamp;
     console.log('[GET /HF/load-deleted] Loading data after timestamp: ' + unixTime);
-    // Add your data loading logic here
-    res.status(200).json({ ids: ['1122', '3344', '5566'] });
+    loadDeletedRfid(req, res, 'HF');
 });
 
 app.get('/LF/load-deleted', (req, res) => {
     const unixTime = req.query.timestamp;
     console.log('[GET /LF/load-deleted] Loading data after timestamp: ' + unixTime);
-    // Add your data loading logic here
-    res.status(200).json({ ids: ['1234', '5678', '9101'] });
+    loadDeletedRfid(req, res, 'LF');
 });
 
 // ---------------------------------------------------------

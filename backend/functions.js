@@ -166,4 +166,43 @@ async function loadRfid(req, res, type) {
     }
 }
 
-module.exports = { saveTransaction, handleTransaction, insertRfid, checkRfid, loadRfid };
+async function loadDeletedRfid(req, res, type) {
+    const timestamp = Number(req.query.timestamp || 0);
+
+    if (!Number.isFinite(timestamp)) {
+        return res.status(400).json({
+            message: 'timestamp must be a valid Unix timestamp',
+            data: []
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT id, type, deletedat AS "deletedAt"
+             FROM rfid
+             WHERE type = $1::rfid_type
+               AND deletedat IS NOT NULL
+               AND deletedat > TO_TIMESTAMP($2)
+             ORDER BY deletedat ASC`,
+            [type.toUpperCase(), timestamp]
+        );
+
+        console.log(`[GET /${type.toUpperCase()}/load-deleted] Loaded deleted RFID records:`, result.rows);
+        return res.status(200).json({
+            ids: result.rows.map((rfid) => rfid.id),
+            data: result.rows
+        });
+    } catch (error) {
+        console.error(`[GET /${type.toUpperCase()}/load-deleted] Error loading deleted RFID:`, error.message);
+        return res.status(500).json({ message: 'Internal server error', data: [] });
+    }
+}
+
+module.exports = {
+    saveTransaction,
+    handleTransaction,
+    insertRfid,
+    checkRfid,
+    loadRfid,
+    loadDeletedRfid
+};
