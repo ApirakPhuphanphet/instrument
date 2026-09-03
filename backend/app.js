@@ -98,6 +98,49 @@ async function insertRfid(req, res, type) {
     }
 }
 
+/**
+ * Check whether an RFID exists with the expected LF / HF type.
+ */
+async function checkRfid(req, res, type) {
+    const rfidId = req.body[type.toUpperCase()] || req.body[type] || req.body.rfid;
+
+    if (!rfidId) {
+        return res.status(400).json({
+            message: `Missing ${type.toUpperCase()} RFID`,
+            checked_rfid: null
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT id, type
+             FROM rfid
+             WHERE id = $1 AND type = $2::rfid_type`,
+            [String(rfidId), type]
+        );
+
+        if (result.rows.length === 0) {
+            console.log(`[POST /${type.toUpperCase()}/check] RFID not found: ${rfidId}`);
+            return res.status(404).json({
+                message: `${type.toUpperCase()} RFID not found`,
+                checked_rfid: null
+            });
+        }
+
+        console.log(`[POST /${type.toUpperCase()}/check] RFID found: ${rfidId}`);
+        return res.status(200).json({
+            message: `${type.toUpperCase()} RFID found`,
+            checked_rfid: result.rows[0].id,
+            type: result.rows[0].type
+        });
+    } catch (error) {
+        console.error(`[POST /${type.toUpperCase()}/check] Error checking RFID:`, error.message);
+        return res.status(500).json({
+            message: 'Internal server error',
+            checked_rfid: null
+        });
+    }
+}
 // POST /LF
 app.post('/LF', (req, res) => {
     console.log('[POST /LF] Body received:', req.body);
@@ -111,35 +154,13 @@ app.post('/HF', (req, res) => {
 });
 
 app.post('/HF/check', (req, res) => {
-    const hf_id = req.body.HF || req.body.hf || req.body.rfid;
-    console.log(`[POST /HF/check] Checking HF RFID -> HF: ${hf_id}`);
-    res.status(200).json({
-        message: "HF Check POST success",
-        checked_hf: "1234567890"  // Example HF ID, replace with actual logic if needed
-    });
-    // res.status(404).json({
-    //     message: "HF Check POST failed",
-    //     checked_hf: null
-    // });
+    console.log('[POST /HF/check] Body received:', req.body);
+    checkRfid(req, res, 'HF');
 });
 
 app.post('/LF/check', (req, res) => {
-    const lf_id = req.body.LF || req.body.lf || req.body.rfid;
-    console.log(`[POST /LF/check] Checking LF RFID -> LF: ${lf_id}`);
-    // check if LF exists in the database
-    pool.query('SELECT * FROM instrument WHERE rfid = $1', [lf_id])
-        .then(result => {
-            if (result.rows.length === 0) {
-                console.log(`[POST /LF/check] LF RFID not found: ${lf_id}`);
-                return res.status(404).json({ message: "LF RFID not found", checked_lf: null });
-            }
-            console.log(`[POST /LF/check] LF RFID found: ${lf_id}`);
-            res.status(200).json({ message: "LF Check POST success", checked_lf: lf_id });
-        })
-        .catch(error => {
-            console.error('[POST /LF/check] Error processing request:', error.message);
-            res.status(500).json({ message: "Internal server error", error: error.message });
-        });
+    console.log('[POST /LF/check] Body received:', req.body);
+    checkRfid(req, res, 'LF');
 });
 
 // ---------------------------------------------------------
