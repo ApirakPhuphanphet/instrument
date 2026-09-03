@@ -108,7 +108,8 @@ async function checkRfid(req, res, type) {
                AND (
                    EXISTS (SELECT 1 FROM "users" WHERE "users".rfid = rfid.id)
                    OR EXISTS (SELECT 1 FROM instrument WHERE instrument.rfid = rfid.id)
-               )`,
+               )
+               AND deletedat IS NULL`,
             [String(rfidId), type.toUpperCase()]
         );
 
@@ -150,11 +151,11 @@ async function loadRfid(req, res, type) {
                    EXISTS (SELECT 1 FROM "users" WHERE "users".rfid = rfid.id)
                    OR EXISTS (SELECT 1 FROM instrument WHERE instrument.rfid = rfid.id)
                )
+               AND deletedat IS NULL
              ORDER BY updatedat ASC`,
             [type.toUpperCase(), timestamp]
         );
 
-        console.log(`[GET /${type.toUpperCase()}/load] Loaded RFID records:`, result.rows);
         return res.status(200).json({
             ids: result.rows.map((rfid) => rfid.id),
             data: result.rows
