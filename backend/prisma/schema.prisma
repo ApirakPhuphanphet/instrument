@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RfidType {
+  LF
+  HF
+
+  @@map("rfid_type")
+}
+
+enum TransactionType {
+  borrow
+  return
+
+  @@map("transaction_type")
+}
+
+enum InstrumentStatus {
+  available
+  borrowed
+  maintenance
+  lost
+  retired
+
+  @@map("instrument_status")
+}
+
+model Rfid {
+  id        String    @id
+  type      RfidType
+  createdAt DateTime  @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt DateTime? @map("deletedat") @db.Timestamptz
+
+  users       User[]
+  instruments Instrument[]
+
+  @@map("rfid")
+}
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  rfid      String?
+  createdAt DateTime  @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt DateTime  @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt DateTime? @map("deletedat") @db.Timestamptz
+
+  rfidRef      Rfid?         @relation(fields: [rfid], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+model Instrument {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  status    InstrumentStatus @default(available)
+  rfid      String?
+  createdAt DateTime         @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt DateTime         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt DateTime?        @map("deletedat") @db.Timestamptz
+
+  rfidRef      Rfid?         @relation(fields: [rfid], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@map("instrument")
+}
+
+model Transaction {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String          @db.Uuid
+  instrument_id String          @db.Uuid
+  type          TransactionType
+  timestamp     DateTime        @default(now()) @db.Timestamptz
+  createdAt     DateTime        @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt     DateTime        @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt     DateTime?       @map("deletedat") @db.Timestamptz
+
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  instrument Instrument @relation(fields: [instrument_id], references: [id], onDelete: Restrict)
+
+  @@map("transaction")
+}
