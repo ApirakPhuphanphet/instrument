@@ -1,7 +1,68 @@
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { TransactionBodySchema } from '../schemas/rfid.schema.js';
+import { TransactionBodySchema, TransactionQuerySchema, TransactionListResponseSchema } from '../schemas/transaction.schema.js';
 export const transactionRoutes = async (fastify) => {
+    fastify.get('/transactions', {
+        schema: {
+            tags: ['Transactions'],
+            summary: 'List transactions with type filter and pagination',
+            querystring: TransactionQuerySchema,
+            response: {
+                200: TransactionListResponseSchema,
+                500: z.object({ message: z.string(), error: z.string().optional() })
+            }
+        }
+    }, async (request, reply) => {
+        const query = request.query;
+        const { type, page, limit, search } = query;
+        try {
+            const where = {
+                deletedAt: null
+            };
+            if (type) {
+                where.type = type;
+            }
+            if (search) {
+                where.OR = [
+                    { user: { name: { contains: search, mode: 'insensitive' } } },
+                    { instrument: { name: { contains: search, mode: 'insensitive' } } },
+                    { user: { rfid: { contains: search, mode: 'insensitive' } } },
+                    { instrument: { rfid: { contains: search, mode: 'insensitive' } } }
+                ];
+            }
+            const [total, transactions] = await Promise.all([
+                prisma.transaction.count({ where }),
+                prisma.transaction.findMany({
+                    where,
+                    include: {
+                        user: {
+                            select: { id: true, name: true, rfid: true }
+                        },
+                        instrument: {
+                            select: { id: true, name: true, status: true, rfid: true }
+                        }
+                    },
+                    orderBy: { timestamp: 'desc' },
+                    skip: (page - 1) * limit,
+                    take: limit
+                })
+            ]);
+            return reply.status(200).send({
+                message: 'Transactions retrieved successfully',
+                data: transactions,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit) || 1
+                }
+            });
+        }
+        catch (error) {
+            console.error('[GET /transactions] Error:', error.message);
+            return reply.status(500).send({ message: 'Internal server error', error: error.message });
+        }
+    });
     const processTransaction = async (type, body, reply) => {
         const { lfuid, hfuid, unixTime } = body;
         try {
@@ -28,6 +89,12 @@ export const transactionRoutes = async (fastify) => {
                     type: type,
                     timestamp: unixTime ? new Date(unixTime * 1000) : undefined
                 }
+            });
+            // set the instrument's status based on the transaction type
+            const newStatus = type === 'borrow' ? 'borrowed' : 'available';
+            await prisma.instrument.update({
+                where: { id: instrument.id },
+                data: { status: newStatus }
             });
             console.log(`[POST /${type}] Transaction recorded:`, transaction);
             return reply.status(200).send({

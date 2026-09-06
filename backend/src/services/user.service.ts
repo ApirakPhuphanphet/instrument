@@ -204,7 +204,8 @@ export class UserService {
     return prisma.user.update({
       where: { id },
       data: {
-        deletedAt: new Date()
+        deletedAt: new Date(),
+        rfid: null, // Unassign RFID upon soft deletion
       },
       include: {
         rfidRef: true

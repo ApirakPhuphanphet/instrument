@@ -155,6 +155,8 @@
     .badge-lost { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.2); }
     .badge-retired { background: rgba(106,120,150,0.15); color: var(--text3); border: 1px solid var(--border); }
     .badge-rfid { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(188,140,255,0.25); }
+    .badge-borrow { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(77,154,255,0.25); }
+    .badge-return { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
 
     /* App Layout */
     #sidebar {
@@ -654,51 +656,135 @@
            PAGE: BORROW & RETURN (CHECKOUT)
            ════════════════════════════════════════════════════════════════════ -->
       <section id="page-checkout" style="display: none;">
-        <div style="max-width: 640px; margin: 0 auto;">
-          <div class="card" style="margin-bottom: 20px;">
-            <h2 style="font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px;">RFID Checkout Station</h2>
-            <p style="font-size: 12.5px; color: var(--text2); margin-bottom: 18px;">
-              Direct hardware interface mapping to <code class="mono">POST /borrow</code> and <code class="mono">POST /return</code>.
-            </p>
+        <!-- Checkout Console Card (Top) -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h2 style="font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+              RFID Checkout Station
+            </h2>
+            <span class="badge badge-rfid">Hardware Interface (POST /borrow &amp; /return)</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text2); margin-bottom: 16px;">
+            Scan LF RFID card (User) and HF RFID tag (Instrument) or select from current system records to submit transactions.
+          </p>
 
-            <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
-              <div>
-                <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">
-                  USER RFID CARD (LFUID) *
-                </label>
-                <div style="display: flex; gap: 8px;">
-                  <input id="checkout-lfuid" class="mono" placeholder="Enter or scan LF RFID tag..." style="flex: 1;">
-                  <button class="btn btn-sm" onclick="populateUserRfidFromSelect()">Pick from User List</button>
-                </div>
-              </div>
-
-              <div>
-                <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">
-                  INSTRUMENT RFID TAG (HFUID) *
-                </label>
-                <div style="display: flex; gap: 8px;">
-                  <input id="checkout-hfuid" class="mono" placeholder="Enter or scan HF RFID tag..." style="flex: 1;">
-                  <button class="btn btn-sm" onclick="populateInstrumentRfidFromSelect()">Pick from Instrument List</button>
-                </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
+            <div>
+              <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">
+                USER RFID CARD (LFUID) *
+              </label>
+              <div style="display: flex; gap: 8px;">
+                <input id="checkout-lfuid" class="mono" placeholder="Enter or scan LF RFID tag..." style="flex: 1;">
+                <button class="btn btn-sm" onclick="populateUserRfidFromSelect()">Pick User</button>
               </div>
             </div>
 
-            <div style="display: flex; gap: 12px;">
-              <button class="btn btn-primary" style="flex: 1; padding: 10px;" onclick="submitCheckout('borrow')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
-                Confirm Borrow (/borrow)
-              </button>
-              <button class="btn btn-success" style="flex: 1; padding: 10px;" onclick="submitCheckout('return')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                Confirm Return (/return)
+            <div>
+              <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">
+                INSTRUMENT RFID TAG (HFUID) *
+              </label>
+              <div style="display: flex; gap: 8px;">
+                <input id="checkout-hfuid" class="mono" placeholder="Enter or scan HF RFID tag..." style="flex: 1;">
+                <button class="btn btn-sm" onclick="populateInstrumentRfidFromSelect()">Pick Instrument</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-primary" style="flex: 1; padding: 10px;" onclick="submitCheckout('borrow')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
+              Confirm Borrow (/borrow)
+            </button>
+            <button class="btn btn-success" style="flex: 1; padding: 10px;" onclick="submitCheckout('return')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+              Confirm Return (/return)
+            </button>
+          </div>
+
+          <!-- Result Display -->
+          <div id="checkout-result" style="display: none; margin-top: 14px; border-top: 1px solid var(--border-muted); padding-top: 14px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">LATEST TRANSACTION RESULT</div>
+            <pre id="checkout-result-json" class="mono" style="font-size: 11px; background: var(--bg); padding: 10px; border-radius: 6px; overflow-x: auto; color: var(--green); max-height: 120px;"></pre>
+          </div>
+        </div>
+
+        <!-- Transactions History Section (Bottom) -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <h3 style="font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px;">Transaction History</h3>
+              <p style="font-size: 11.5px; color: var(--text3);" id="tx-summary-text">Showing recorded borrow &amp; return operations</p>
+            </div>
+
+            <!-- Filters & Controls -->
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <!-- Type Filter -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 11.5px; color: var(--text2); font-weight: 500;">Type:</label>
+                <select id="tx-filter-type" onchange="loadTransactions(1)" style="font-size: 12px; padding: 5px 8px;">
+                  <option value="">All Types</option>
+                  <option value="borrow">Borrow</option>
+                  <option value="return">Return</option>
+                </select>
+              </div>
+
+              <!-- Search -->
+              <input id="tx-search-input" placeholder="Filter user or instrument..." oninput="debounce(function(){ loadTransactions(1); }, 300)()" style="font-size: 12px; width: 190px; padding: 5px 10px;">
+
+              <!-- Limit (default 20) -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 11.5px; color: var(--text2); font-weight: 500;">Limit:</label>
+                <select id="tx-limit-select" onchange="loadTransactions(1)" style="font-size: 12px; padding: 5px 8px;">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+
+              <!-- Refresh Button -->
+              <button class="btn btn-sm" onclick="loadTransactions()" title="Refresh transactions">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <span>Refresh</span>
               </button>
             </div>
           </div>
 
-          <!-- Result Display -->
-          <div id="checkout-result" class="card" style="display: none;">
-            <div style="font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px;">TRANSACTION RESULT</div>
-            <pre id="checkout-result-json" class="mono" style="font-size: 11.5px; background: var(--bg); padding: 12px; border-radius: 6px; overflow-x: auto; color: var(--green);"></pre>
+          <!-- Table Container -->
+          <div class="table-container" style="border: none; border-radius: 0; box-shadow: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Type</th>
+                  <th>Instrument</th>
+                  <th>User</th>
+                  <th>Transaction ID</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-table-body">
+                <tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 24px;">Loading transactions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div id="tx-pagination-info" style="font-size: 12px; color: var(--text3);">
+              Showing 0 - 0 of 0 transactions
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-sm" id="tx-prev-btn" onclick="changeTxPage(-1)" disabled>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                Previous
+              </button>
+              <span id="tx-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page 1</span>
+              <button class="btn btn-sm" id="tx-next-btn" onclick="changeTxPage(1)" disabled>
+                Next
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -1016,7 +1102,10 @@
       if (pageId === 'instruments') loadInstruments();
       if (pageId === 'users') loadUsers();
       if (pageId === 'dashboard') refreshAll();
-      if (pageId === 'checkout') populateCheckoutSelects();
+      if (pageId === 'checkout') {
+        populateCheckoutSelects();
+        loadTransactions(1);
+      }
     }
 
     function debounce(func, wait) {
@@ -1571,11 +1660,132 @@
         if (res.ok) {
           showToast(`${type.toUpperCase()} recorded successfully!`);
           refreshAll();
+          loadTransactions(1);
         } else {
           showToast(data.message || `Failed to record ${type}`, 'error');
         }
       } catch (err) {
         showToast(`Network error sending ${type} request`, 'error');
+      }
+    }
+
+    // ── Transactions State & API ───────────────────────────────────────────
+    let transactionsList = [];
+    let txCurrentPage = 1;
+    let txTotalPages = 1;
+    let txTotalCount = 0;
+
+    async function loadTransactions(page = txCurrentPage) {
+      txCurrentPage = page;
+      const type = document.getElementById('tx-filter-type')?.value || '';
+      const search = document.getElementById('tx-search-input')?.value.trim() || '';
+      const limit = parseInt(document.getElementById('tx-limit-select')?.value || '20', 10);
+
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit)
+      });
+      if (type) params.set('type', type);
+      if (search) params.set('search', search);
+
+      const tbody = document.getElementById('transactions-table-body');
+      if (tbody && !transactionsList.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 24px;">Loading transactions...</td></tr>`;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/transactions?${params}`);
+        const data = await res.json();
+        if (res.ok) {
+          transactionsList = data.data || [];
+          const pagination = data.pagination || { total: 0, page: 1, limit: 20, totalPages: 1 };
+          txTotalCount = pagination.total;
+          txTotalPages = pagination.totalPages;
+          renderTransactions();
+          updateTxPagination(pagination);
+        } else {
+          showToast(data.message || 'Failed to load transactions', 'error');
+        }
+      } catch (err) {
+        showToast('Error connecting to transactions API', 'error');
+      }
+    }
+
+    function renderTransactions() {
+      const tbody = document.getElementById('transactions-table-body');
+      if (!tbody) return;
+
+      if (!transactionsList.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 32px;">No transactions found matching filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = transactionsList.map(tx => {
+        const isBorrow = tx.type === 'borrow';
+        const typeBadge = isBorrow
+          ? `<span class="badge badge-borrow" style="font-weight: 600; text-transform: uppercase;">Borrow</span>`
+          : `<span class="badge badge-return" style="font-weight: 600; text-transform: uppercase;">Return</span>`;
+
+        const instName = tx.instrument ? escapeHtml(tx.instrument.name) : '<span style="color: var(--text3);">(Unknown)</span>';
+        const instRfid = tx.instrument?.rfid ? `<span class="mono badge badge-rfid" style="font-size: 10px;">${tx.instrument.rfid}</span>` : '';
+        const userName = tx.user ? escapeHtml(tx.user.name) : '<span style="color: var(--text3);">(Unknown)</span>';
+        const userRfid = tx.user?.rfid ? `<span class="mono badge badge-rfid" style="font-size: 10px;">${tx.user.rfid}</span>` : '';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-size: 12px; font-weight: 500; color: var(--text);">${formatDate(tx.timestamp || tx.createdAt)}</div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">${new Date(tx.timestamp || tx.createdAt).toISOString()}</div>
+            </td>
+            <td>${typeBadge}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-weight: 600; color: var(--text);">${instName}</div>
+                ${instRfid}
+              </div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.instrument_id}</div>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-weight: 600; color: var(--text);">${userName}</div>
+                ${userRfid}
+              </div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.user_id}</div>
+            </td>
+            <td>
+              <span class="mono" style="font-size: 11px; color: var(--text3);" title="${tx.id}">${tx.id.slice(0, 8)}...${tx.id.slice(-4)}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateTxPagination(pagination) {
+      const { total, page, limit, totalPages } = pagination;
+      const start = total === 0 ? 0 : (page - 1) * limit + 1;
+      const end = Math.min(page * limit, total);
+
+      const infoEl = document.getElementById('tx-pagination-info');
+      if (infoEl) {
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} transactions`;
+      }
+
+      const indicatorEl = document.getElementById('tx-page-indicator');
+      if (indicatorEl) {
+        indicatorEl.textContent = `Page ${page} of ${totalPages}`;
+      }
+
+      const prevBtn = document.getElementById('tx-prev-btn');
+      if (prevBtn) prevBtn.disabled = (page <= 1);
+
+      const nextBtn = document.getElementById('tx-next-btn');
+      if (nextBtn) nextBtn.disabled = (page >= totalPages);
+    }
+
+    function changeTxPage(delta) {
+      const targetPage = txCurrentPage + delta;
+      if (targetPage >= 1 && targetPage <= txTotalPages) {
+        loadTransactions(targetPage);
       }
     }
 
