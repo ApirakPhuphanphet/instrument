@@ -76,11 +76,15 @@ export const transactionRoutes = async (fastify) => {
             }
             const instrument = await prisma.instrument.findFirst({
                 where: { rfid: String(hfuid) },
-                select: { id: true }
+                select: { id: true, status: true }
             });
             if (!instrument) {
                 console.log(`[POST /${type}] Instrument RFID not found: ${hfuid}`);
                 return reply.status(404).send({ message: 'Instrument RFID not found', data: body });
+            }
+            if (instrument.status != 'borrowed' && instrument.status != 'available') {
+                console.log(`[POST /${type}] Instrument is not available for ${type}: ${hfuid}`);
+                return reply.status(400).send({ message: `Instrument is not available for ${type}`, data: body });
             }
             const transaction = await prisma.transaction.create({
                 data: {

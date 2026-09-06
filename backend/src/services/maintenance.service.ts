@@ -116,7 +116,11 @@ export class MaintenanceService {
         : notes
       : maintenance.notes;
 
-    const [record] = await prisma.$transaction([
+    const [, record] = await prisma.$transaction([
+      prisma.instrument.update({
+        where: { id: maintenance.instrument_id },
+        data: { status: 'available' }
+      }),
       prisma.maintenance.update({
         where: { id },
         data: {
@@ -131,10 +135,6 @@ export class MaintenanceService {
             select: { id: true, name: true, status: true, rfid: true }
           }
         }
-      }),
-      prisma.instrument.update({
-        where: { id: maintenance.instrument_id },
-        data: { status: 'available' }
       })
     ]);
 
