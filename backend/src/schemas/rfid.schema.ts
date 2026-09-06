@@ -33,3 +33,11 @@ export type TransactionType = z.infer<typeof TransactionTypeEnum>;
 export const RfidTypeParamSchema = z.object({
   type: z.enum(['LF', 'HF', 'lf', 'hf']).transform((val) => val.toUpperCase() as 'LF' | 'HF')
 });
+
+export const UnassignedRfidQuerySchema = z.object({
+  type: z.enum(['LF', 'HF', 'lf', 'hf']).optional().transform((val) => val ? (val.toUpperCase() as 'LF' | 'HF') : undefined),
+  currentRfid: z.string().optional()
+});
+
+export type UnassignedRfidQuery = z.infer<typeof UnassignedRfidQuerySchema>;
+

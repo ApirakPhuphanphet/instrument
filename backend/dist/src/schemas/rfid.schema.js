@@ -19,3 +19,7 @@ export const TransactionTypeEnum = z.enum(['borrow', 'return']);
 export const RfidTypeParamSchema = z.object({
     type: z.enum(['LF', 'HF', 'lf', 'hf']).transform((val) => val.toUpperCase())
 });
+export const UnassignedRfidQuerySchema = z.object({
+    type: z.enum(['LF', 'HF', 'lf', 'hf']).optional().transform((val) => val ? val.toUpperCase() : undefined),
+    currentRfid: z.string().optional()
+});

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { RfidBodySchema, LoadQuerySchema } from '../schemas/rfid.schema.js';
+import { RfidBodySchema, LoadQuerySchema, UnassignedRfidQuerySchema } from '../schemas/rfid.schema.js';
 export const rfidRoutes = async (fastify) => {
     // Helper logic for inserting RFID
     const handleInsertRfid = async (type, body, reply) => {
@@ -281,5 +281,73 @@ export const rfidRoutes = async (fastify) => {
         const query = request.query;
         console.log('[GET /HF/load-deleted] Loading data after timestamp: ' + query.timestamp);
         return handleLoadDeletedRfid('HF', query.timestamp, reply);
+    });
+    // GET /rfid/unassigned - Get RFIDs not connected to any active user or instrument
+    fastify.get('/rfid/unassigned', {
+        schema: {
+            tags: ['RFID'],
+            summary: 'Get RFIDs not connected to any active user or instrument',
+            querystring: UnassignedRfidQuerySchema,
+            response: {
+                200: z.object({
+                    message: z.string(),
+                    data: z.array(z.object({
+                        id: z.string(),
+                        type: z.enum(['LF', 'HF']),
+                        createdAt: z.date().or(z.string()),
+                        updatedAt: z.date().or(z.string())
+                    }))
+                }),
+                500: z.object({ message: z.string() })
+            }
+        }
+    }, async (request, reply) => {
+        try {
+            const { type, currentRfid } = request.query;
+            const where = {
+                deletedAt: null,
+                AND: [
+                    {
+                        // Not connected to any active user (unless it equals currentRfid)
+                        users: {
+                            none: {
+                                deletedAt: null,
+                                ...(currentRfid ? { rfid: { not: currentRfid } } : {})
+                            }
+                        }
+                    },
+                    {
+                        // Not connected to any active instrument (unless it equals currentRfid)
+                        instruments: {
+                            none: {
+                                deletedAt: null,
+                                ...(currentRfid ? { rfid: { not: currentRfid } } : {})
+                            }
+                        }
+                    }
+                ]
+            };
+            if (type) {
+                where.type = type;
+            }
+            const rfids = await prisma.rfid.findMany({
+                where,
+                orderBy: { id: 'asc' },
+                select: {
+                    id: true,
+                    type: true,
+                    createdAt: true,
+                    updatedAt: true
+                }
+            });
+            return reply.status(200).send({
+                message: 'Unassigned RFIDs retrieved successfully',
+                data: rfids
+            });
+        }
+        catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
     });
 };

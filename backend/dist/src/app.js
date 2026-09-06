@@ -5,19 +5,34 @@ import formbody from '@fastify/formbody';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { healthRoutes } from './routes/health.js';
 import { transactionRoutes } from './routes/transaction.js';
 import { rfidRoutes } from './routes/rfid.js';
 import { userRoutes } from './routes/user.js';
 import { instrumentRoutes } from './routes/instrument.js';
 import { prisma } from './lib/prisma.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 export async function buildApp() {
     const app = Fastify({
         logger: false
     }).withTypeProvider();
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
+    await app.register(cors, {
+        origin: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+    });
     await app.register(formbody);
+    await app.register(fastifyStatic, {
+        root: resolve(__dirname, '../../frontend'),
+        prefix: '/ui/',
+        decorateReply: false
+    });
     await app.register(swagger, {
         openapi: {
             info: {
