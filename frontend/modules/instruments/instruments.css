@@ -5,12 +5,14 @@
   gap: 14px;
 }
 
-#inst-tab-maintenance .card {
+#inst-tab-maintenance .card,
+#inst-tab-transactions .card {
   padding: 0;
   overflow: hidden;
 }
 
-#inst-tab-maintenance .table-container {
+#inst-tab-maintenance .table-container,
+#inst-tab-transactions .table-container {
   border: none;
   border-radius: 0;
   box-shadow: none;

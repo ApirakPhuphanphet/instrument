@@ -80,9 +80,7 @@ function navigate(pageId) {
   const titles = {
     dashboard: 'Dashboard & System Overview',
     instruments: 'Instruments Management',
-    users: 'Users Management',
-    checkout: 'RFID Borrow & Return Console',
-    rfid: 'RFID Registry & Verification'
+    users: 'Users Management'
   };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[pageId] || 'ES-Hub';
@@ -94,10 +92,6 @@ function navigate(pageId) {
   if (pageId === 'instruments' && typeof switchInstrumentTab === 'function') switchInstrumentTab('list');
   if (pageId === 'users' && typeof loadUsers === 'function') loadUsers();
   if (pageId === 'dashboard' && typeof refreshAll === 'function') refreshAll();
-  if (pageId === 'checkout') {
-    if (typeof populateCheckoutSelects === 'function') populateCheckoutSelects();
-    if (typeof loadTransactions === 'function') loadTransactions(1);
-  }
 }
 
 function debounce(func, wait) {
@@ -168,9 +162,7 @@ document.getElementById('global-search')?.addEventListener('keydown', (e) => {
 const MODULE_DEFS = [
   { name: 'dashboard', path: 'modules/dashboard/dashboard.html' },
   { name: 'instruments', path: 'modules/instruments/instruments.html' },
-  { name: 'users', path: 'modules/users/users.html' },
-  { name: 'checkout', path: 'modules/checkout/checkout.html' },
-  { name: 'rfid', path: 'modules/rfid/rfid.html' }
+  { name: 'users', path: 'modules/users/users.html' }
 ];
 
 async function loadAllModules() {

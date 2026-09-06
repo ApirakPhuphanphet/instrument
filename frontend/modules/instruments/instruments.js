@@ -22,21 +22,25 @@ function setInstrumentView(mode) {
 function switchInstrumentTab(tabName) {
   const listTab = document.getElementById('inst-tab-list');
   const maintTab = document.getElementById('inst-tab-maintenance');
+  const txTab = document.getElementById('inst-tab-transactions');
   const listBtn = document.getElementById('tab-btn-inst-list');
   const maintBtn = document.getElementById('tab-btn-inst-maint');
+  const txBtn = document.getElementById('tab-btn-inst-tx');
+
+  if (listTab) listTab.style.display = (tabName === 'list') ? 'block' : 'none';
+  if (maintTab) maintTab.style.display = (tabName === 'maintenance') ? 'block' : 'none';
+  if (txTab) txTab.style.display = (tabName === 'transactions') ? 'block' : 'none';
+
+  listBtn?.classList.toggle('active', tabName === 'list');
+  maintBtn?.classList.toggle('active', tabName === 'maintenance');
+  txBtn?.classList.toggle('active', tabName === 'transactions');
 
   if (tabName === 'list') {
-    if (listTab) listTab.style.display = 'block';
-    if (maintTab) maintTab.style.display = 'none';
-    listBtn?.classList.add('active');
-    maintBtn?.classList.remove('active');
     loadInstruments();
   } else if (tabName === 'maintenance') {
-    if (listTab) listTab.style.display = 'none';
-    if (maintTab) maintTab.style.display = 'block';
-    listBtn?.classList.remove('active');
-    maintBtn?.classList.add('active');
     loadMaintenance(1);
+  } else if (tabName === 'transactions') {
+    if (typeof loadTransactions === 'function') loadTransactions(1);
   }
 }
 
@@ -543,3 +547,124 @@ async function quickReturnInstrumentMaintenance(instrumentId, instrumentName) {
     showToast('Error querying maintenance record', 'error');
   }
 }
+
+// ── Transaction History Sub-Module Logic ──────────────────────────────
+let transactionsList = [];
+let txCurrentPage = 1;
+let txTotalPages = 1;
+let txTotalCount = 0;
+
+async function loadTransactions(page = txCurrentPage) {
+  txCurrentPage = page;
+  const type = document.getElementById('tx-filter-type')?.value || '';
+  const search = document.getElementById('tx-search-input')?.value.trim() || '';
+  const limit = parseInt(document.getElementById('tx-limit-select')?.value || '20', 10);
+
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit)
+  });
+  if (type) params.set('type', type);
+  if (search) params.set('search', search);
+
+  const tbody = document.getElementById('transactions-table-body');
+  if (tbody && !transactionsList.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 24px;">Loading transactions...</td></tr>`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/transactions?${params}`);
+    const data = await res.json();
+    if (res.ok) {
+      transactionsList = data.data || [];
+      const pagination = data.pagination || { total: 0, page: 1, limit: 20, totalPages: 1 };
+      txTotalCount = pagination.total;
+      txTotalPages = pagination.totalPages;
+      renderTransactions();
+      updateTxPagination(pagination);
+    } else {
+      showToast(data.message || 'Failed to load transactions', 'error');
+    }
+  } catch (err) {
+    showToast('Error connecting to transactions API', 'error');
+  }
+}
+
+function renderTransactions() {
+  const tbody = document.getElementById('transactions-table-body');
+  if (!tbody) return;
+
+  if (!transactionsList.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 32px;">No transactions found matching filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = transactionsList.map(tx => {
+    const isBorrow = tx.type === 'borrow';
+    const typeBadge = isBorrow
+      ? `<span class="badge badge-borrow" style="font-weight: 600; text-transform: uppercase;">Borrow</span>`
+      : `<span class="badge badge-return" style="font-weight: 600; text-transform: uppercase;">Return</span>`;
+
+    const instName = tx.instrument ? escapeHtml(tx.instrument.name) : '<span style="color: var(--text3);">(Unknown)</span>';
+    const instRfid = tx.instrument?.rfid ? `<span class="mono badge badge-rfid" style="font-size: 10px;">${tx.instrument.rfid}</span>` : '';
+    const userName = tx.user ? escapeHtml(tx.user.name) : '<span style="color: var(--text3);">(Unknown)</span>';
+    const userRfid = tx.user?.rfid ? `<span class="mono badge badge-rfid" style="font-size: 10px;">${tx.user.rfid}</span>` : '';
+
+    return `
+      <tr>
+        <td>
+          <div style="font-size: 12px; font-weight: 500; color: var(--text);">${formatDate(tx.timestamp || tx.createdAt)}</div>
+          <div class="mono" style="font-size: 10.5px; color: var(--text3);">${new Date(tx.timestamp || tx.createdAt).toISOString()}</div>
+        </td>
+        <td>${typeBadge}</td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text);">${instName}</div>
+            ${instRfid}
+          </div>
+          <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.instrument_id}</div>
+        </td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="font-weight: 600; color: var(--text);">${userName}</div>
+            ${userRfid}
+          </div>
+          <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.user_id}</div>
+        </td>
+        <td>
+          <span class="mono" style="font-size: 11px; color: var(--text3);" title="${tx.id}">${tx.id.slice(0, 8)}...${tx.id.slice(-4)}</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateTxPagination(pagination) {
+  const { total, page, limit, totalPages } = pagination;
+  const start = total === 0 ? 0 : (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
+
+  const infoEl = document.getElementById('tx-pagination-info');
+  if (infoEl) {
+    infoEl.textContent = `Showing ${start} - ${end} of ${total} transactions`;
+  }
+
+  const indicatorEl = document.getElementById('tx-page-indicator');
+  if (indicatorEl) {
+    indicatorEl.textContent = `Page ${page} of ${totalPages}`;
+  }
+
+  const prevBtn = document.getElementById('tx-prev-btn');
+  if (prevBtn) prevBtn.disabled = (page <= 1);
+
+  const nextBtn = document.getElementById('tx-next-btn');
+  if (nextBtn) nextBtn.disabled = (page >= totalPages);
+}
+
+function changeTxPage(delta) {
+  const targetPage = txCurrentPage + delta;
+  if (targetPage >= 1 && targetPage <= txTotalPages) {
+    loadTransactions(targetPage);
+  }
+}
+
