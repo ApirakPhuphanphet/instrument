@@ -1,0 +1,113 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: DASHBOARD
+     ════════════════════════════════════════════════════════════════════ -->
+<section id="page-dashboard">
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: var(--accent-bg); color: var(--accent);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 500;">TOTAL INSTRUMENTS</div>
+        <div id="stat-total-instruments" class="mono" style="font-size: 20px; font-weight: 700; color: var(--text);">-</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: var(--green-bg); color: var(--green);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 500;">AVAILABLE NOW</div>
+        <div id="stat-available-instruments" class="mono" style="font-size: 20px; font-weight: 700; color: var(--green);">-</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: var(--yellow-bg); color: var(--yellow);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 500;">BORROWED / IN USE</div>
+        <div id="stat-borrowed-instruments" class="mono" style="font-size: 20px; font-weight: 700; color: var(--yellow);">-</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: var(--purple-bg); color: var(--purple);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 500;">REGISTERED USERS</div>
+        <div id="stat-total-users" class="mono" style="font-size: 20px; font-weight: 700; color: var(--purple);">-</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 Column Overview Section -->
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px;">
+    <!-- Quick Checkout Action -->
+    <div class="card">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <h3 style="font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+          Fast Borrow & Return Console
+        </h3>
+        <span class="badge badge-rfid">RFID Tag Sync</span>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text2); margin-bottom: 14px;">
+        Scan or select an LF RFID (User card) and an HF RFID (Instrument tag) to instantly register transactions.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 4px;">USER (LF RFID)</label>
+          <select id="quick-user-select" style="width: 100%;">
+            <option value="">-- Select User --</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 4px;">INSTRUMENT (HF RFID)</label>
+          <select id="quick-instrument-select" style="width: 100%;">
+            <option value="">-- Select Instrument --</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="executeQuickTransaction('borrow')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
+          Borrow Instrument
+        </button>
+        <button class="btn btn-success" style="flex: 1;" onclick="executeQuickTransaction('return')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          Return Instrument
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick System Info & Tools -->
+    <div class="card">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Quick Management Shortcuts
+      </h3>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn" style="justify-content: flex-start; padding: 9px 12px;" onclick="openAddInstrumentModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Add New Instrument</span>
+        </button>
+        <button class="btn" style="justify-content: flex-start; padding: 9px 12px;" onclick="openAddUserModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          <span>Add New User</span>
+        </button>
+        <button class="btn" style="justify-content: flex-start; padding: 9px 12px;" onclick="window.open(API_BASE + '/docs', '_blank')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>View Interactive OpenAPI Swagger Docs (/docs)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

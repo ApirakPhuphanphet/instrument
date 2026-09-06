@@ -1,0 +1,96 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     PAGE: USERS
+     ════════════════════════════════════════════════════════════════════ -->
+<section id="page-users" style="display: none;">
+  <!-- Filters Toolbar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <input id="user-search-input" placeholder="Search by name or RFID..." oninput="debounce(loadUsers, 300)()" style="font-size: 12px; width: 220px;">
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); cursor: pointer; user-select: none;">
+        <input type="checkbox" id="user-include-deleted" onchange="loadUsers()">
+        <span>Include Soft-Deleted</span>
+      </label>
+    </div>
+
+    <button class="btn btn-primary" onclick="openAddUserModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>New User</span>
+    </button>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Assigned RFID Tag (LF)</th>
+          <th>UUID</th>
+          <th>Status</th>
+          <th>Created At</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-table-body">
+        <tr><td colspan="6" style="text-align: center; color: var(--text3);">Loading users...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── MODAL: Add User ── -->
+<div class="modal-overlay" id="add-user-modal" onclick="closeModalOnBackdrop(event, 'add-user-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Add User</h3>
+      <button class="btn btn-sm" onclick="closeModal('add-user-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">User Name *</label>
+        <input id="new-user-name" placeholder="e.g. Alex Johnson" style="width: 100%;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect RFID Tag (LF - 125kHz)</label>
+        <select id="new-user-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;" onchange="handleRfidSelectChange('new-user')">
+          <option value="">-- No RFID Tag (Unassigned) --</option>
+        </select>
+        <input id="new-user-rfid-custom" class="mono" placeholder="Type custom RFID tag..." style="width: 100%; display: none;">
+        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned LF RFID tags, or enter custom.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('add-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCreateUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Edit User ── -->
+<div class="modal-overlay" id="edit-user-modal" onclick="closeModalOnBackdrop(event, 'edit-user-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Edit User</h3>
+      <button class="btn btn-sm" onclick="closeModal('edit-user-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-user-id">
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">User Name *</label>
+        <input id="edit-user-name" style="width: 100%;">
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect RFID Tag (LF - 125kHz)</label>
+        <select id="edit-user-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;" onchange="handleRfidSelectChange('edit-user')">
+          <option value="">-- No RFID Tag (Unassigned) --</option>
+        </select>
+        <input id="edit-user-rfid-custom" class="mono" placeholder="Type custom RFID tag..." style="width: 100%; display: none;">
+        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned LF tags or keep current tag.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('edit-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitUpdateUser()">Save Changes</button>
+    </div>
+  </div>
+</div>

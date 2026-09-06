@@ -1,0 +1,11 @@
+/* ── Checkout Module Styles ── */
+#checkout-result pre {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  background: var(--bg);
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  color: var(--green);
+  max-height: 120px;
+}

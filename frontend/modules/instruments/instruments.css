@@ -1,0 +1,17 @@
+/* ── Instruments Module Styles ── */
+#inst-grid-view {
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+#inst-tab-maintenance .card {
+  padding: 0;
+  overflow: hidden;
+}
+
+#inst-tab-maintenance .table-container {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
