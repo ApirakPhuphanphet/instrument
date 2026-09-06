@@ -16,6 +16,7 @@ import { healthRoutes } from './routes/health.js';
 import { transactionRoutes } from './routes/transaction.js';
 import { rfidRoutes } from './routes/rfid.js';
 import { userRoutes } from './routes/user.js';
+import { instrumentRoutes } from './routes/instrument.js';
 import { prisma } from './lib/prisma.js';
 
 export async function buildApp() {
@@ -48,6 +49,7 @@ export async function buildApp() {
   await app.register(transactionRoutes);
   await app.register(rfidRoutes);
   await app.register(userRoutes);
+  await app.register(instrumentRoutes);
 
   return app;
 }
