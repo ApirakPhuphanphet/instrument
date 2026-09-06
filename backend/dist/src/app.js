@@ -8,6 +8,7 @@ import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fast
 import { healthRoutes } from './routes/health.js';
 import { transactionRoutes } from './routes/transaction.js';
 import { rfidRoutes } from './routes/rfid.js';
+import { userRoutes } from './routes/user.js';
 import { prisma } from './lib/prisma.js';
 export async function buildApp() {
     const app = Fastify({
@@ -33,6 +34,7 @@ export async function buildApp() {
     await app.register(healthRoutes);
     await app.register(transactionRoutes);
     await app.register(rfidRoutes);
+    await app.register(userRoutes);
     return app;
 }
 const port = Number(process.env.PORT || 3000);
