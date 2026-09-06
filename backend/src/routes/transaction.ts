@@ -43,6 +43,13 @@ export const transactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
         }
       });
 
+      // set the instrument's status based on the transaction type
+      const newStatus = type === 'borrow' ? 'borrowed' : 'available';
+      await prisma.instrument.update({
+        where: { id: instrument.id },
+        data: { status: newStatus }
+      });
+
       console.log(`[POST /${type}] Transaction recorded:`, transaction);
       return reply.status(200).send({
         message: `${type.charAt(0).toUpperCase()}${type.slice(1)} POST success`,

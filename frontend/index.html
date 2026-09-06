@@ -391,10 +391,6 @@
           Online
         </span>
       </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>Server Time</span>
-        <span class="mono" id="server-time-display" style="color: var(--text2);">--:--:--</span>
-      </div>
       <div style="display: flex; justify-content: space-between;">
         <span>Backend Host</span>
         <span class="mono" id="api-host-display" style="color: var(--text2); font-size: 10px;">:3000</span>
@@ -1051,17 +1047,6 @@
       }
     }
 
-    async function syncTime() {
-      try {
-        const res = await fetch(`${API_BASE}/time`);
-        if (res.ok) {
-          const unixStr = await res.text();
-          const d = new Date(Number(unixStr) * 1000);
-          document.getElementById('server-time-display').textContent = d.toTimeString().split(' ')[0];
-        }
-      } catch (_) {}
-    }
-
     // ── Data State ─────────────────────────────────────────────────────────
     let instrumentsList = [];
     let usersList = [];
@@ -1695,8 +1680,6 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateApiHostDisplay();
       checkHealth();
-      syncTime();
-      setInterval(syncTime, 10000);
       setInterval(checkHealth, 20000);
       refreshAll();
     });
