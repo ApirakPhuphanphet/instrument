@@ -1,8 +1,13 @@
 import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { RfidType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { RfidBodySchema, LoadQuerySchema, RfidBody, LoadQuery } from '../schemas/rfid.schema.js';
+import {
+  RfidBodySchema,
+  LoadQuerySchema,
+  RfidBody,
+  LoadQuery,
+  RfidType
+} from '../schemas/rfid.schema.js';
 
 export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
   // Helper logic for inserting RFID
@@ -21,7 +26,8 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
         where: { id: String(rfidId) },
         update: {
           type: type as RfidType,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          deletedAt: null
         },
         create: {
           id: String(rfidId),
@@ -110,7 +116,7 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       console.log(`[GET /${type}/load] Loaded RFID records:`, rows);
       return reply.status(200).send({
-        ids: rows.map((rfid) => rfid.id),
+        ids: rows.map((rfid: { id: string }) => rfid.id),
         data: rows
       });
     } catch (error: any) {
@@ -136,7 +142,11 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
           deletedAt: {
             not: null,
             gt: dateFilter
-          }
+          },
+          OR: [
+            { users: { some: {} } },
+            { instruments: { some: {} } }
+          ]
         },
         orderBy: { deletedAt: 'asc' },
         select: { id: true, type: true, deletedAt: true }
@@ -144,7 +154,7 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
       console.log(`[GET /${type}/load-deleted] Loaded deleted RFID records:`, rows);
       return reply.status(200).send({
-        ids: rows.map((rfid) => rfid.id),
+        ids: rows.map((rfid: { id: string }) => rfid.id),
         data: rows
       });
     } catch (error: any) {

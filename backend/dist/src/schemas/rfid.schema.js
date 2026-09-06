@@ -14,6 +14,8 @@ export const RfidBodySchema = z.object({
 export const LoadQuerySchema = z.object({
     timestamp: z.coerce.number().default(0)
 });
+export const RfidTypeEnum = z.enum(['LF', 'HF']);
+export const TransactionTypeEnum = z.enum(['borrow', 'return']);
 export const RfidTypeParamSchema = z.object({
     type: z.enum(['LF', 'HF', 'lf', 'hf']).transform((val) => val.toUpperCase())
 });

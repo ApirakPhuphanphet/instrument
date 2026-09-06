@@ -24,6 +24,12 @@ export const LoadQuerySchema = z.object({
 
 export type LoadQuery = z.infer<typeof LoadQuerySchema>;
 
+export const RfidTypeEnum = z.enum(['LF', 'HF']);
+export type RfidType = z.infer<typeof RfidTypeEnum>;
+
+export const TransactionTypeEnum = z.enum(['borrow', 'return']);
+export type TransactionType = z.infer<typeof TransactionTypeEnum>;
+
 export const RfidTypeParamSchema = z.object({
   type: z.enum(['LF', 'HF', 'lf', 'hf']).transform((val) => val.toUpperCase() as 'LF' | 'HF')
 });

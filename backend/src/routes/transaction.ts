@@ -1,8 +1,11 @@
 import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { TransactionType } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { TransactionBodySchema, TransactionBody } from '../schemas/rfid.schema.js';
+import {
+  TransactionBodySchema,
+  TransactionBody,
+  TransactionType
+} from '../schemas/rfid.schema.js';
 
 export const transactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
   const processTransaction = async (

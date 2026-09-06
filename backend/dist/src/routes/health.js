@@ -1,17 +1,24 @@
 import { z } from 'zod';
+import { prisma } from '../lib/prisma.js';
 export const healthRoutes = async (fastify) => {
     fastify.get('/health', {
         schema: {
             tags: ['Health'],
             summary: 'Check server health',
             response: {
-                200: z.object({
-                    message: z.string()
-                })
+                200: z.object({ message: z.string() }),
+                503: z.object({ message: z.string() })
             }
         }
     }, async (_request, reply) => {
-        return reply.status(200).send({ message: 'Server is healthy' });
+        try {
+            await prisma.$queryRaw `SELECT 1`;
+            return reply.status(200).send({ message: 'Server and database are healthy' });
+        }
+        catch (error) {
+            console.error('[GET /health] Database check failed:', error.message);
+            return reply.status(503).send({ message: 'Database unavailable' });
+        }
     });
     fastify.get('/time', {
         schema: {

@@ -16,7 +16,8 @@ export const rfidRoutes = async (fastify) => {
                 where: { id: String(rfidId) },
                 update: {
                     type: type,
-                    updatedAt: new Date()
+                    updatedAt: new Date(),
+                    deletedAt: null
                 },
                 create: {
                     id: String(rfidId),
@@ -123,7 +124,11 @@ export const rfidRoutes = async (fastify) => {
                     deletedAt: {
                         not: null,
                         gt: dateFilter
-                    }
+                    },
+                    OR: [
+                        { users: { some: {} } },
+                        { instruments: { some: {} } }
+                    ]
                 },
                 orderBy: { deletedAt: 'asc' },
                 select: { id: true, type: true, deletedAt: true }
