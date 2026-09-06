@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // url      = env("DATABASE_URL") no need in prisma schema, we will use .env file to set the DATABASE_URL
 }
 
 enum RfidType {
@@ -28,6 +29,14 @@ enum InstrumentStatus {
   retired
 
   @@map("instrument_status")
+}
+
+enum MaintenanceStatus {
+  in_progress
+  completed
+  cancelled
+
+  @@map("maintenance_status")
 }
 
 model Rfid {
@@ -68,6 +77,7 @@ model Instrument {
 
   rfidRef      Rfid?         @relation(fields: [rfid], references: [id], onDelete: SetNull)
   transactions Transaction[]
+  maintenances Maintenance[]
 
   @@map("instrument")
 }
@@ -86,4 +96,22 @@ model Transaction {
   instrument Instrument @relation(fields: [instrument_id], references: [id], onDelete: Restrict)
 
   @@map("transaction")
+}
+
+model Maintenance {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instrument_id String            @db.Uuid
+  status        MaintenanceStatus @default(in_progress)
+  sent_at       DateTime          @default(now()) @db.Timestamptz
+  returned_at   DateTime?         @db.Timestamptz
+  reason        String?
+  notes         String?
+  maintainer    String?
+  createdAt     DateTime          @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt     DateTime?         @map("deletedat") @db.Timestamptz
+
+  instrument Instrument @relation(fields: [instrument_id], references: [id], onDelete: Cascade)
+
+  @@map("maintenance")
 }

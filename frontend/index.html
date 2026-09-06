@@ -157,6 +157,9 @@
     .badge-rfid { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(188,140,255,0.25); }
     .badge-borrow { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(77,154,255,0.25); }
     .badge-return { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
+    .badge-in_progress { background: rgba(240,136,62,0.12); color: var(--orange); border: 1px solid rgba(240,136,62,0.25); }
+    .badge-completed { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
+    .badge-cancelled { background: rgba(106,120,150,0.15); color: var(--text3); border: 1px solid var(--border); }
 
     /* App Layout */
     #sidebar {
@@ -377,6 +380,10 @@
       <div class="nav-item" onclick="navigate('checkout')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         <span>Borrow & Return</span>
+      </div>
+      <div class="nav-item" onclick="navigate('maintenance')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span>Maintenance</span>
       </div>
       <div class="nav-item" onclick="navigate('rfid')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
@@ -848,6 +855,90 @@
         </div>
       </section>
 
+      <!-- ════════════════════════════════════════════════════════════════════
+           PAGE: MAINTENANCE
+           ════════════════════════════════════════════════════════════════════ -->
+      <section id="page-maintenance" style="display: none;">
+        <!-- Filters Toolbar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- Status Filter -->
+            <select id="maint-filter-status" onchange="loadMaintenance(1)" style="font-size: 12px; padding: 6px 10px;">
+              <option value="">All Statuses</option>
+              <option value="in_progress">In Maintenance</option>
+              <option value="completed">Completed / Returned</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            <!-- Search input -->
+            <input id="maint-search-input" placeholder="Search instrument, maintainer, reason..." oninput="debounce(function(){ loadMaintenance(1); }, 300)()" style="font-size: 12px; width: 240px; padding: 6px 10px;">
+
+            <!-- Limit -->
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label style="font-size: 11.5px; color: var(--text2); font-weight: 500;">Per page:</label>
+              <select id="maint-limit-select" onchange="loadMaintenance(1)" style="font-size: 12px; padding: 6px 10px;">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn" onclick="loadMaintenance()" title="Refresh records">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span>Refresh</span>
+            </button>
+            <button class="btn btn-primary" onclick="openSendMaintenanceModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Send to Maintenance</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div class="table-container" style="border: none; border-radius: 0; box-shadow: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Instrument</th>
+                  <th>Status</th>
+                  <th>Sent Date</th>
+                  <th>Return Date</th>
+                  <th>Reason / Issue</th>
+                  <th>Maintainer</th>
+                  <th>Resolution Notes</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="maintenance-table-body">
+                <tr><td colspan="8" style="text-align: center; color: var(--text3); padding: 24px;">Loading maintenance records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div id="maint-pagination-info" style="font-size: 12px; color: var(--text3);">
+              Showing 0 - 0 of 0 records
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn btn-sm" id="maint-prev-btn" onclick="changeMaintPage(-1)" disabled>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                Previous
+              </button>
+              <span id="maint-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page 1</span>
+              <button class="btn btn-sm" id="maint-next-btn" onclick="changeMaintPage(1)" disabled>
+                Next
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -1008,6 +1099,69 @@
     </div>
   </div>
 
+  <!-- ── MODAL: Send to Maintenance ── -->
+  <div class="modal-overlay" id="send-maintenance-modal" onclick="closeModalOnBackdrop(event, 'send-maintenance-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Send Instrument to Maintenance</h3>
+        <button class="btn btn-sm" onclick="closeModal('send-maintenance-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Select Instrument *</label>
+          <select id="send-maint-instrument-select" style="width: 100%;">
+            <option value="">-- Choose Instrument --</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Reason / Issue *</label>
+          <input id="send-maint-reason" placeholder="e.g. Annual calibration, damaged probe, screen glitch..." style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service Provider / Technician</label>
+          <input id="send-maint-maintainer" placeholder="e.g. Internal Lab, Tektronix, Fluke Service..." style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Notes</label>
+          <textarea id="send-maint-notes" rows="3" placeholder="Additional details, tracking number, or instructions..." style="width: 100%;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('send-maintenance-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitSendMaintenance()">Confirm Send to Maintenance</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL: Return from Maintenance ── -->
+  <div class="modal-overlay" id="return-maintenance-modal" onclick="closeModalOnBackdrop(event, 'return-maintenance-modal')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Bring Back Instrument (Return from Maintenance)</h3>
+        <button class="btn btn-sm" onclick="closeModal('return-maintenance-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="return-maint-id">
+        <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-muted);">
+          <div style="font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 2px;">INSTRUMENT</div>
+          <div id="return-maint-instrument-name" style="font-size: 14px; font-weight: 600; color: var(--text);"></div>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service Provider / Technician</label>
+          <input id="return-maint-maintainer" placeholder="e.g. Internal Lab, Tektronix..." style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Resolution / Maintenance Notes *</label>
+          <textarea id="return-maint-notes" rows="3" placeholder="Describe work performed (e.g. Calibration passed, replaced fuse, cleaned...)" style="width: 100%;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('return-maintenance-modal')">Cancel</button>
+        <button class="btn btn-success" onclick="submitReturnMaintenance()">Confirm Bring Back (Set Available)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toast-container"></div>
 
@@ -1091,6 +1245,7 @@
         instruments: 'Instruments Management',
         users: 'Users Management',
         checkout: 'RFID Borrow & Return Console',
+        maintenance: 'Instrument Maintenance & Service Records',
         rfid: 'RFID Registry & Verification'
       };
       document.getElementById('page-title').textContent = titles[pageId] || 'ES-Hub';
@@ -1105,6 +1260,9 @@
       if (pageId === 'checkout') {
         populateCheckoutSelects();
         loadTransactions(1);
+      }
+      if (pageId === 'maintenance') {
+        loadMaintenance(1);
       }
     }
 
@@ -1204,6 +1362,11 @@
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 6px;">
                 ${!isDel ? `
+                  ${inst.status === 'maintenance' ? `
+                    <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}', '${escapeHtml(inst.name)}')">Bring Back</button>
+                  ` : (inst.status === 'available' ? `
+                    <button class="btn btn-sm" onclick="openSendMaintenanceModal('${inst.id}')" title="Send to Maintenance">Maintain</button>
+                  ` : '')}
                   <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
                   <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
                 ` : `
@@ -1234,6 +1397,11 @@
 
             <div style="border-top: 1px solid var(--border-muted); padding-top: 10px; display: flex; justify-content: flex-end; gap: 6px;">
               ${!isDel ? `
+                ${inst.status === 'maintenance' ? `
+                  <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}', '${escapeHtml(inst.name)}')">Bring Back</button>
+                ` : (inst.status === 'available' ? `
+                  <button class="btn btn-sm" onclick="openSendMaintenanceModal('${inst.id}')" title="Send to Maintenance">Maintain</button>
+                ` : '')}
                 <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
               ` : `
@@ -1837,6 +2005,226 @@
       } catch (err) {
         resultDiv.style.display = 'block';
         resultDiv.innerHTML = `<span style="color: var(--red);">Network error checking tag.</span>`;
+      }
+    }
+
+    // ── Maintenance State & API ────────────────────────────────────────────
+    let maintenanceList = [];
+    let maintCurrentPage = 1;
+    let maintTotalPages = 1;
+    let maintTotalCount = 0;
+
+    async function loadMaintenance(page = maintCurrentPage) {
+      maintCurrentPage = page;
+      const status = document.getElementById('maint-filter-status')?.value || '';
+      const search = document.getElementById('maint-search-input')?.value.trim() || '';
+      const limit = parseInt(document.getElementById('maint-limit-select')?.value || '20', 10);
+
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit)
+      });
+      if (status) params.set('status', status);
+      if (search) params.set('search', search);
+
+      const tbody = document.getElementById('maintenance-table-body');
+      if (tbody && !maintenanceList.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text3); padding: 24px;">Loading maintenance records...</td></tr>`;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/maintenance?${params}`);
+        const data = await res.json();
+        if (res.ok) {
+          maintenanceList = data.data || [];
+          const pagination = data.pagination || { total: 0, page: 1, limit: 20, totalPages: 1 };
+          maintTotalCount = pagination.total;
+          maintTotalPages = pagination.totalPages;
+          renderMaintenance();
+          updateMaintPagination(pagination);
+        } else {
+          showToast(data.message || 'Failed to load maintenance records', 'error');
+        }
+      } catch (err) {
+        showToast('Error connecting to maintenance API', 'error');
+      }
+    }
+
+    function renderMaintenance() {
+      const tbody = document.getElementById('maintenance-table-body');
+      if (!tbody) return;
+
+      if (!maintenanceList.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text3); padding: 32px;">No maintenance records found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = maintenanceList.map(m => {
+        const isInProgress = m.status === 'in_progress';
+        const isCompleted = m.status === 'completed';
+        const statusBadge = isInProgress
+          ? `<span class="badge badge-in_progress" style="font-weight: 600;">IN MAINTENANCE</span>`
+          : (isCompleted
+              ? `<span class="badge badge-completed" style="font-weight: 600;">COMPLETED</span>`
+              : `<span class="badge badge-cancelled" style="font-weight: 600;">CANCELLED</span>`);
+
+        const instName = m.instrument ? escapeHtml(m.instrument.name) : '<span style="color: var(--text3);">(Unknown)</span>';
+        const instRfid = m.instrument?.rfid ? `<span class="mono badge badge-rfid" style="font-size: 10px;">${m.instrument.rfid}</span>` : '';
+        const reason = m.reason ? escapeHtml(m.reason) : '<span style="color: var(--text3); font-size: 11px;">-</span>';
+        const maintainer = m.maintainer ? escapeHtml(m.maintainer) : '<span style="color: var(--text3); font-size: 11px;">-</span>';
+        const notes = m.notes ? escapeHtml(m.notes).replace(/\n/g, '<br>') : '<span style="color: var(--text3); font-size: 11px;">-</span>';
+
+        const sentDateFormatted = formatDate(m.sent_at);
+        const returnDateFormatted = m.returned_at
+          ? `<span style="color: var(--green); font-weight: 500;">${formatDate(m.returned_at)}</span>`
+          : `<span style="color: var(--orange); font-size: 11px; font-weight: 500;">Active / In Progress</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                <span>${instName}</span>
+                ${instRfid}
+              </div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${m.instrument_id}</div>
+            </td>
+            <td>${statusBadge}</td>
+            <td style="font-size: 11.5px; color: var(--text);">${sentDateFormatted}</td>
+            <td style="font-size: 11.5px;">${returnDateFormatted}</td>
+            <td style="font-size: 12px; max-width: 180px;">${reason}</td>
+            <td style="font-size: 12px;">${maintainer}</td>
+            <td style="font-size: 11.5px; max-width: 220px; color: var(--text2);">${notes}</td>
+            <td style="text-align: right;">
+              ${isInProgress ? `
+                <button class="btn btn-sm btn-success" onclick="openReturnMaintenanceModal('${m.id}', '${escapeHtml(m.instrument?.name || 'Instrument')}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Bring Back</span>
+                </button>
+              ` : `
+                <span class="mono" style="font-size: 11px; color: var(--text3);">${m.id.slice(0, 8)}...</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateMaintPagination(pagination) {
+      const { total, page, limit, totalPages } = pagination;
+      const start = total === 0 ? 0 : (page - 1) * limit + 1;
+      const end = Math.min(page * limit, total);
+
+      const infoEl = document.getElementById('maint-pagination-info');
+      if (infoEl) infoEl.textContent = `Showing ${start} - ${end} of ${total} records`;
+
+      const indicatorEl = document.getElementById('maint-page-indicator');
+      if (indicatorEl) indicatorEl.textContent = `Page ${page} of ${totalPages}`;
+
+      const prevBtn = document.getElementById('maint-prev-btn');
+      if (prevBtn) prevBtn.disabled = (page <= 1);
+
+      const nextBtn = document.getElementById('maint-next-btn');
+      if (nextBtn) nextBtn.disabled = (page >= totalPages);
+    }
+
+    function changeMaintPage(delta) {
+      const targetPage = maintCurrentPage + delta;
+      if (targetPage >= 1 && targetPage <= maintTotalPages) {
+        loadMaintenance(targetPage);
+      }
+    }
+
+    function openSendMaintenanceModal(preselectedInstrumentId = '') {
+      const select = document.getElementById('send-maint-instrument-select');
+      if (select) {
+        select.innerHTML = '<option value="">-- Choose Instrument --</option>' +
+          instrumentsList
+            .filter(i => !i.deletedAt && i.status !== 'maintenance' && i.status !== 'borrowed')
+            .map(i => `<option value="${i.id}" ${i.id === preselectedInstrumentId ? 'selected' : ''}>${escapeHtml(i.name)} [${i.status}] ${i.rfid ? `(${i.rfid})` : ''}</option>`)
+            .join('');
+      }
+      document.getElementById('send-maint-reason').value = '';
+      document.getElementById('send-maint-maintainer').value = '';
+      document.getElementById('send-maint-notes').value = '';
+      openModal('send-maintenance-modal');
+    }
+
+    async function submitSendMaintenance() {
+      const instrument_id = document.getElementById('send-maint-instrument-select').value;
+      const reason = document.getElementById('send-maint-reason').value.trim();
+      const maintainer = document.getElementById('send-maint-maintainer').value.trim();
+      const notes = document.getElementById('send-maint-notes').value.trim();
+
+      if (!instrument_id) return showToast('Please select an instrument', 'error');
+      if (!reason) return showToast('Please provide a reason or issue description', 'error');
+
+      try {
+        const res = await fetch(`${API_BASE}/maintenance/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ instrument_id, reason, maintainer, notes })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Instrument sent to maintenance!');
+          closeModal('send-maintenance-modal');
+          loadMaintenance(1);
+          loadInstruments();
+        } else {
+          showToast(data.message || 'Failed to send to maintenance', 'error');
+        }
+      } catch (err) {
+        showToast('Network error sending to maintenance', 'error');
+      }
+    }
+
+    function openReturnMaintenanceModal(maintId, instrumentName) {
+      document.getElementById('return-maint-id').value = maintId;
+      document.getElementById('return-maint-instrument-name').textContent = instrumentName || 'Selected Instrument';
+      document.getElementById('return-maint-maintainer').value = '';
+      document.getElementById('return-maint-notes').value = '';
+      openModal('return-maintenance-modal');
+    }
+
+    async function submitReturnMaintenance() {
+      const id = document.getElementById('return-maint-id').value;
+      const maintainer = document.getElementById('return-maint-maintainer').value.trim();
+      const notes = document.getElementById('return-maint-notes').value.trim();
+
+      if (!id) return showToast('Maintenance record ID missing', 'error');
+      if (!notes) return showToast('Please provide resolution / maintenance notes', 'error');
+
+      try {
+        const res = await fetch(`${API_BASE}/maintenance/${id}/return`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ maintainer, notes })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Instrument brought back from maintenance and set to Available!');
+          closeModal('return-maintenance-modal');
+          loadMaintenance(1);
+          loadInstruments();
+        } else {
+          showToast(data.message || 'Failed to return from maintenance', 'error');
+        }
+      } catch (err) {
+        showToast('Network error returning from maintenance', 'error');
+      }
+    }
+
+    async function quickReturnInstrumentMaintenance(instrumentId, instrumentName) {
+      try {
+        const res = await fetch(`${API_BASE}/maintenance?instrument_id=${instrumentId}&status=in_progress`);
+        const data = await res.json();
+        if (res.ok && data.data && data.data.length > 0) {
+          openReturnMaintenanceModal(data.data[0].id, instrumentName);
+        } else {
+          showToast('No active maintenance record found for this instrument', 'error');
+        }
+      } catch (err) {
+        showToast('Error querying maintenance record', 'error');
       }
     }
 
