@@ -5,39 +5,59 @@
   <!-- Instrument Sub-Tabs -->
   <div class="sub-tabs">
     <button class="sub-tab-btn active" id="tab-btn-inst-list" onclick="switchInstrumentTab('list')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
       <span>All Instruments</span>
     </button>
-    <button class="sub-tab-btn" id="tab-btn-inst-maint" onclick="switchInstrumentTab('maintenance')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-      <span>Maintenance Records</span>
-    </button>
     <button class="sub-tab-btn" id="tab-btn-inst-tx" onclick="switchInstrumentTab('transactions')">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4m0 0l4-4m-4 4h18"/><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+        <path d="M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
       <span>Transaction History</span>
+      <button class="sub-tab-btn" id="tab-btn-inst-maint" onclick="switchInstrumentTab('maintenance')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path
+            d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+        <span>Maintenance Records</span>
+      </button>
+    </button>
+    <button class="sub-tab-btn" id="tab-btn-inst-retired" onclick="switchInstrumentTab('retired')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+      <span>Retired</span>
     </button>
   </div>
 
   <!-- TAB 1: All Instruments List -->
   <div id="inst-tab-list">
     <!-- Filters Toolbar -->
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+    <div
+      style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <!-- Status Filter -->
         <select id="inst-filter-status" onchange="loadInstruments()" style="font-size: 12px;">
-          <option value="">All Statuses</option>
+          <option value="">All Statuses (Excl. Retired)</option>
           <option value="available">Available</option>
           <option value="borrowed">Borrowed</option>
           <option value="maintenance">Maintenance</option>
           <option value="lost">Lost</option>
-          <option value="retired">Retired</option>
         </select>
 
         <!-- Search input -->
-        <input id="inst-search-input" placeholder="Filter by name..." oninput="debounce(loadInstruments, 300)()" style="font-size: 12px; width: 200px;">
+        <input id="inst-search-input" placeholder="Filter by name..." oninput="debounce(loadInstruments, 300)()"
+          style="font-size: 12px; width: 200px;">
 
         <!-- Include Deleted Checkbox -->
-        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); cursor: pointer; user-select: none;">
+        <label
+          style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); cursor: pointer; user-select: none;">
           <input type="checkbox" id="inst-include-deleted" onchange="loadInstruments()">
           <span>Include Soft-Deleted</span>
         </label>
@@ -46,15 +66,27 @@
       <div style="display: flex; align-items: center; gap: 8px;">
         <!-- View Mode Switch -->
         <button class="btn btn-sm" id="inst-view-table-btn" onclick="setInstrumentView('table')" title="Table View">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
         </button>
         <button class="btn btn-sm" id="inst-view-grid-btn" onclick="setInstrumentView('grid')" title="Grid View">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
         </button>
 
         <!-- Add Button -->
         <button class="btn btn-primary" onclick="openAddInstrumentModal()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
           <span>New Instrument</span>
         </button>
       </div>
@@ -74,7 +106,9 @@
           </tr>
         </thead>
         <tbody id="inst-table-body">
-          <tr><td colspan="6" style="text-align: center; color: var(--text3);">Loading instruments...</td></tr>
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text3);">Loading instruments...</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -86,7 +120,8 @@
   <!-- TAB 2: Maintenance Records (Read-only listing & bring back) -->
   <div id="inst-tab-maintenance" style="display: none;">
     <!-- Filters Toolbar -->
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+    <div
+      style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <!-- Status Filter -->
         <select id="maint-filter-status" onchange="loadMaintenance(1)" style="font-size: 12px; padding: 6px 10px;">
@@ -97,7 +132,9 @@
         </select>
 
         <!-- Search input -->
-        <input id="maint-search-input" placeholder="Search instrument, maintainer, reason..." oninput="debounce(function(){ loadMaintenance(1); }, 300)()" style="font-size: 12px; width: 240px; padding: 6px 10px;">
+        <input id="maint-search-input" placeholder="Search instrument, maintainer, reason..."
+          oninput="debounce(function(){ loadMaintenance(1); }, 300)()"
+          style="font-size: 12px; width: 240px; padding: 6px 10px;">
 
         <!-- Limit -->
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -113,7 +150,10 @@
 
       <div style="display: flex; align-items: center; gap: 8px;">
         <button class="btn" onclick="loadMaintenance()" title="Refresh records">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
           <span>Refresh</span>
         </button>
       </div>
@@ -136,25 +176,34 @@
             </tr>
           </thead>
           <tbody id="maintenance-table-body">
-            <tr><td colspan="8" style="text-align: center; color: var(--text3); padding: 24px;">Loading maintenance records...</td></tr>
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text3); padding: 24px;">Loading maintenance
+                records...</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Pagination Footer -->
-      <div style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div
+        style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <div id="maint-pagination-info" style="font-size: 12px; color: var(--text3);">
           Showing 0 - 0 of 0 records
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <button class="btn btn-sm" id="maint-prev-btn" onclick="changeMaintPage(-1)" disabled>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
             Previous
           </button>
-          <span id="maint-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page 1</span>
+          <span id="maint-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page
+            1</span>
           <button class="btn btn-sm" id="maint-next-btn" onclick="changeMaintPage(1)" disabled>
             Next
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -164,10 +213,13 @@
   <!-- TAB 3: Transaction History -->
   <div id="inst-tab-transactions" style="display: none;">
     <div class="card" style="padding: 0; overflow: hidden;">
-      <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div
+        style="padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <div>
-          <h3 style="font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px;">Transaction History</h3>
-          <p style="font-size: 11.5px; color: var(--text3);" id="tx-summary-text">Showing recorded borrow &amp; return operations</p>
+          <h3 style="font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px;">Transaction History
+          </h3>
+          <p style="font-size: 11.5px; color: var(--text3);" id="tx-summary-text">Showing recorded borrow &amp; return
+            operations</p>
         </div>
 
         <!-- Filters & Controls -->
@@ -183,7 +235,9 @@
           </div>
 
           <!-- Search -->
-          <input id="tx-search-input" placeholder="Filter user or instrument..." oninput="debounce(function(){ loadTransactions(1); }, 300)()" style="font-size: 12px; width: 190px; padding: 5px 10px;">
+          <input id="tx-search-input" placeholder="Filter user or instrument..."
+            oninput="debounce(function(){ loadTransactions(1); }, 300)()"
+            style="font-size: 12px; width: 190px; padding: 5px 10px;">
 
           <!-- Limit (default 20) -->
           <div style="display: flex; align-items: center; gap: 6px;">
@@ -198,7 +252,10 @@
 
           <!-- Refresh Button -->
           <button class="btn btn-sm" onclick="loadTransactions()" title="Refresh transactions">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
             <span>Refresh</span>
           </button>
         </div>
@@ -217,25 +274,125 @@
             </tr>
           </thead>
           <tbody id="transactions-table-body">
-            <tr><td colspan="5" style="text-align: center; color: var(--text3); padding: 24px;">Loading transactions...</td></tr>
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text3); padding: 24px;">Loading transactions...
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <!-- Pagination Footer -->
-      <div style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div
+        style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <div id="tx-pagination-info" style="font-size: 12px; color: var(--text3);">
           Showing 0 - 0 of 0 transactions
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <button class="btn btn-sm" id="tx-prev-btn" onclick="changeTxPage(-1)" disabled>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
             Previous
           </button>
-          <span id="tx-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page 1</span>
+          <span id="tx-page-indicator" class="mono" style="font-size: 12px; color: var(--text); padding: 0 4px;">Page
+            1</span>
           <button class="btn btn-sm" id="tx-next-btn" onclick="changeTxPage(1)" disabled>
             Next
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Retired Instruments -->
+  <div id="inst-tab-retired" style="display: none;">
+    <!-- Filters Toolbar -->
+    <div
+      style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <!-- Search input -->
+        <input id="retired-search-input" placeholder="Filter retired instruments..."
+          oninput="debounce(function(){ loadRetiredInstruments(1); }, 300)()"
+          style="font-size: 12px; width: 220px; padding: 6px 10px;">
+
+        <!-- Include Deleted Checkbox -->
+        <label
+          style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); cursor: pointer; user-select: none;">
+          <input type="checkbox" id="retired-include-deleted" onchange="loadRetiredInstruments(1)">
+          <span>Include Soft-Deleted</span>
+        </label>
+
+        <!-- Limit -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 11.5px; color: var(--text2); font-weight: 500;">Limit:</label>
+          <select id="retired-limit-select" onchange="loadRetiredInstruments(1)"
+            style="font-size: 12px; padding: 5px 8px;">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn btn-sm" onclick="loadRetiredInstruments()" title="Refresh retired instruments">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Table View -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="table-container" style="border: none; border-radius: 0; box-shadow: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Instrument Name</th>
+              <th>Status</th>
+              <th>RFID Tag (HF)</th>
+              <th>UUID</th>
+              <th>Date Retired / Updated</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="retired-table-body">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text3); padding: 24px;">Loading retired
+                instruments...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div
+        style="padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div id="retired-pagination-info" style="font-size: 12px; color: var(--text3);">
+          Showing 0 - 0 of 0 retired instruments
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-sm" id="retired-prev-btn" onclick="changeRetiredPage(-1)" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Previous
+          </button>
+          <span id="retired-page-indicator" class="mono"
+            style="font-size: 12px; color: var(--text); padding: 0 4px;">Page 1</span>
+          <button class="btn btn-sm" id="retired-next-btn" onclick="changeRetiredPage(1)" disabled>
+            Next
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -252,11 +409,14 @@
     </div>
     <div class="modal-body">
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Name *</label>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
+          Name *</label>
         <input id="new-inst-name" placeholder="e.g. Keysight Oscilloscope" style="width: 100%;">
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Status</label>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Status</label>
         <select id="new-inst-status" style="width: 100%;">
           <option value="available">available</option>
           <option value="borrowed">borrowed</option>
@@ -266,12 +426,17 @@
         </select>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect RFID Tag (HF - 13.56MHz)</label>
-        <select id="new-inst-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;" onchange="handleRfidSelectChange('new-inst')">
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect
+          RFID Tag (HF - 13.56MHz)</label>
+        <select id="new-inst-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;"
+          onchange="handleRfidSelectChange('new-inst')">
           <option value="">-- No RFID Tag (Unassigned) --</option>
         </select>
-        <input id="new-inst-rfid-custom" class="mono" placeholder="Type custom RFID tag..." style="width: 100%; display: none;">
-        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned HF RFID tags, or enter custom.</div>
+        <input id="new-inst-rfid-custom" class="mono" placeholder="Type custom RFID tag..."
+          style="width: 100%; display: none;">
+        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned HF RFID
+          tags, or enter custom.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -291,11 +456,14 @@
     <div class="modal-body">
       <input type="hidden" id="edit-inst-id">
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Name *</label>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
+          Name *</label>
         <input id="edit-inst-name" style="width: 100%;">
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Status</label>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Status</label>
         <select id="edit-inst-status" style="width: 100%;">
           <option value="available">available</option>
           <option value="borrowed">borrowed</option>
@@ -305,12 +473,17 @@
         </select>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect RFID Tag (HF - 13.56MHz)</label>
-        <select id="edit-inst-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;" onchange="handleRfidSelectChange('edit-inst')">
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Connect
+          RFID Tag (HF - 13.56MHz)</label>
+        <select id="edit-inst-rfid-select" class="mono" style="width: 100%; margin-bottom: 6px;"
+          onchange="handleRfidSelectChange('edit-inst')">
           <option value="">-- No RFID Tag (Unassigned) --</option>
         </select>
-        <input id="edit-inst-rfid-custom" class="mono" placeholder="Type custom RFID tag..." style="width: 100%; display: none;">
-        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned HF tags or keep current tag.</div>
+        <input id="edit-inst-rfid-custom" class="mono" placeholder="Type custom RFID tag..."
+          style="width: 100%; display: none;">
+        <div style="font-size: 10.5px; color: var(--text3); margin-top: 4px;">Choose from available unassigned HF tags
+          or keep current tag.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -329,21 +502,31 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="send-maint-instrument-id">
-      <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-muted);">
-        <div style="font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 2px;">INSTRUMENT TO MAINTAIN</div>
+      <div
+        style="background: var(--bg-surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-muted);">
+        <div style="font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 2px;">INSTRUMENT TO MAINTAIN
+        </div>
         <div id="send-maint-instrument-name" style="font-size: 14px; font-weight: 600; color: var(--text);"></div>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Reason / Issue *</label>
-        <input id="send-maint-reason" placeholder="e.g. Annual calibration, damaged probe, screen glitch..." style="width: 100%;">
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Reason /
+          Issue *</label>
+        <input id="send-maint-reason" placeholder="e.g. Annual calibration, damaged probe, screen glitch..."
+          style="width: 100%;">
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service Provider / Technician</label>
-        <input id="send-maint-maintainer" placeholder="e.g. Internal Lab, Tektronix, Fluke Service..." style="width: 100%;">
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service
+          Provider / Technician</label>
+        <input id="send-maint-maintainer" placeholder="e.g. Internal Lab, Tektronix, Fluke Service..."
+          style="width: 100%;">
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Notes</label>
-        <textarea id="send-maint-notes" rows="3" placeholder="Additional details, tracking number, or instructions..." style="width: 100%;"></textarea>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Notes</label>
+        <textarea id="send-maint-notes" rows="3" placeholder="Additional details, tracking number, or instructions..."
+          style="width: 100%;"></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -354,25 +537,33 @@
 </div>
 
 <!-- ── MODAL: Return from Maintenance ── -->
-<div class="modal-overlay" id="return-maintenance-modal" onclick="closeModalOnBackdrop(event, 'return-maintenance-modal')">
+<div class="modal-overlay" id="return-maintenance-modal"
+  onclick="closeModalOnBackdrop(event, 'return-maintenance-modal')">
   <div class="modal-box">
     <div class="modal-header">
-      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Bring Back Instrument (Return from Maintenance)</h3>
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Bring Back Instrument (Return from Maintenance)
+      </h3>
       <button class="btn btn-sm" onclick="closeModal('return-maintenance-modal')">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="return-maint-id">
-      <div style="background: var(--bg-surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-muted);">
+      <div
+        style="background: var(--bg-surface); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-muted);">
         <div style="font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 2px;">INSTRUMENT</div>
         <div id="return-maint-instrument-name" style="font-size: 14px; font-weight: 600; color: var(--text);"></div>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service Provider / Technician</label>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Service
+          Provider / Technician</label>
         <input id="return-maint-maintainer" placeholder="e.g. Internal Lab, Tektronix..." style="width: 100%;">
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Resolution / Maintenance Notes *</label>
-        <textarea id="return-maint-notes" rows="3" placeholder="Describe work performed (e.g. Calibration passed, replaced fuse, cleaned...)" style="width: 100%;"></textarea>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Resolution
+          / Maintenance Notes (Optional)</label>
+        <textarea id="return-maint-notes" rows="3" placeholder="Describe work performed (optional)..."
+          style="width: 100%;"></textarea>
       </div>
     </div>
     <div class="modal-footer">

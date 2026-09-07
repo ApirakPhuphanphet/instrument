@@ -91,8 +91,8 @@ export class MaintenanceService {
    * Updates maintenance record with returned_at, notes, status 'completed',
    * and restores instrument status to 'available'.
    */
-  async returnFromMaintenance(id: string, data: ReturnMaintenanceInput) {
-    const { returned_at, notes, maintainer } = data;
+  async returnFromMaintenance(id: string, data: ReturnMaintenanceInput = {}) {
+    const { returned_at, notes, maintainer } = data || {};
 
     const maintenance = await prisma.maintenance.findFirst({
       where: { id, deletedAt: null },

@@ -23,17 +23,21 @@ function switchInstrumentTab(tabName) {
   const listTab = document.getElementById('inst-tab-list');
   const maintTab = document.getElementById('inst-tab-maintenance');
   const txTab = document.getElementById('inst-tab-transactions');
+  const retiredTab = document.getElementById('inst-tab-retired');
   const listBtn = document.getElementById('tab-btn-inst-list');
   const maintBtn = document.getElementById('tab-btn-inst-maint');
   const txBtn = document.getElementById('tab-btn-inst-tx');
+  const retiredBtn = document.getElementById('tab-btn-inst-retired');
 
   if (listTab) listTab.style.display = (tabName === 'list') ? 'block' : 'none';
   if (maintTab) maintTab.style.display = (tabName === 'maintenance') ? 'block' : 'none';
   if (txTab) txTab.style.display = (tabName === 'transactions') ? 'block' : 'none';
+  if (retiredTab) retiredTab.style.display = (tabName === 'retired') ? 'block' : 'none';
 
   listBtn?.classList.toggle('active', tabName === 'list');
   maintBtn?.classList.toggle('active', tabName === 'maintenance');
   txBtn?.classList.toggle('active', tabName === 'transactions');
+  retiredBtn?.classList.toggle('active', tabName === 'retired');
 
   if (tabName === 'list') {
     loadInstruments();
@@ -41,6 +45,8 @@ function switchInstrumentTab(tabName) {
     loadMaintenance(1);
   } else if (tabName === 'transactions') {
     if (typeof loadTransactions === 'function') loadTransactions(1);
+  } else if (tabName === 'retired') {
+    loadRetiredInstruments(1);
   }
 }
 
@@ -50,7 +56,11 @@ async function loadInstruments() {
   const includeDel = document.getElementById('inst-include-deleted')?.checked || false;
 
   const params = new URLSearchParams({ limit: '100' });
-  if (status) params.set('status', status);
+  if (status) {
+    params.set('status', status);
+  } else {
+    params.set('excludeStatus', 'retired');
+  }
   if (search) params.set('search', search);
   if (includeDel) params.set('includeDeleted', 'true');
 
@@ -58,7 +68,7 @@ async function loadInstruments() {
     const res = await fetch(`${API_BASE}/instruments?${params}`);
     const data = await res.json();
     if (res.ok) {
-      instrumentsList = data.data || [];
+      instrumentsList = (data.data || []).filter(inst => status ? true : inst.status !== 'retired');
       renderInstruments();
       if (typeof updateDashboardStats === 'function') updateDashboardStats();
     } else {
@@ -260,7 +270,7 @@ async function submitCreateInstrument() {
 }
 
 function openEditInstrumentModal(id) {
-  const inst = instrumentsList.find(i => i.id === id);
+  const inst = instrumentsList.find(i => i.id === id) || (typeof retiredInstrumentsList !== 'undefined' && retiredInstrumentsList.find(i => i.id === id));
   if (!inst) return;
   document.getElementById('edit-inst-id').value = inst.id;
   document.getElementById('edit-inst-name').value = inst.name;
@@ -286,6 +296,7 @@ async function submitUpdateInstrument() {
       showToast('Instrument updated successfully');
       closeModal('edit-instrument-modal');
       loadInstruments();
+      if (typeof loadRetiredInstruments === 'function') loadRetiredInstruments();
     } else {
       showToast(data.message || 'Update failed', 'error');
     }
@@ -306,6 +317,7 @@ async function deleteInstrument(id, permanent = false) {
     if (res.ok) {
       showToast(data.message || 'Instrument deleted');
       loadInstruments();
+      if (typeof loadRetiredInstruments === 'function') loadRetiredInstruments();
     } else {
       showToast(data.message || 'Failed to delete', 'error');
     }
@@ -321,6 +333,7 @@ async function restoreInstrument(id) {
     if (res.ok) {
       showToast('Instrument restored successfully!');
       loadInstruments();
+      if (typeof loadRetiredInstruments === 'function') loadRetiredInstruments();
     } else {
       showToast(data.message || 'Failed to restore', 'error');
     }
@@ -510,13 +523,16 @@ async function submitReturnMaintenance() {
   const notes = document.getElementById('return-maint-notes').value.trim();
 
   if (!id) return showToast('Maintenance record ID missing', 'error');
-  if (!notes) return showToast('Please provide resolution / maintenance notes', 'error');
+
+  const payload = {};
+  if (maintainer) payload.maintainer = maintainer;
+  if (notes) payload.notes = notes;
 
   try {
     const res = await fetch(`${API_BASE}/maintenance/${id}/return`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ maintainer, notes })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (res.ok) {
@@ -667,4 +683,158 @@ function changeTxPage(delta) {
     loadTransactions(targetPage);
   }
 }
+
+// ── Retired Instruments Sub-Module Logic ─────────────────────────────
+let retiredInstrumentsList = [];
+let retiredCurrentPage = 1;
+let retiredTotalPages = 1;
+let retiredTotalCount = 0;
+
+async function loadRetiredInstruments(page = retiredCurrentPage) {
+  retiredCurrentPage = page;
+  const search = document.getElementById('retired-search-input')?.value.trim() || '';
+  const includeDel = document.getElementById('retired-include-deleted')?.checked || false;
+  const limit = parseInt(document.getElementById('retired-limit-select')?.value || '20', 10);
+
+  const params = new URLSearchParams({
+    status: 'retired',
+    page: String(page),
+    limit: String(limit)
+  });
+  if (search) params.set('search', search);
+  if (includeDel) params.set('includeDeleted', 'true');
+
+  const tbody = document.getElementById('retired-table-body');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text3); padding: 24px;">Loading retired instruments...</td></tr>`;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/instruments?${params.toString()}`);
+    const data = await res.json();
+    if (res.ok) {
+      retiredInstrumentsList = data.data || [];
+      const pagination = data.pagination || {
+        total: retiredInstrumentsList.length,
+        page: retiredCurrentPage,
+        limit,
+        totalPages: 1
+      };
+      retiredTotalPages = pagination.totalPages || 1;
+      retiredTotalCount = pagination.total || 0;
+      renderRetiredInstruments();
+      updateRetiredPagination(pagination);
+    } else {
+      showToast(data.message || 'Failed to load retired instruments', 'error');
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 24px;">Failed to load retired instruments</td></tr>`;
+      }
+    }
+  } catch (err) {
+    showToast('Network error loading retired instruments', 'error');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 24px;">Network error</td></tr>`;
+    }
+  }
+}
+
+function renderRetiredInstruments() {
+  const tbody = document.getElementById('retired-table-body');
+  if (!tbody) return;
+
+  if (!retiredInstrumentsList.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text3); padding: 32px;">No retired instruments found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = retiredInstrumentsList.map(inst => {
+    const isDel = !!inst.deletedAt;
+    return `
+      <tr style="${isDel ? 'opacity: 0.6;' : ''}">
+        <td>
+          <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
+          ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+        </td>
+        <td>
+          <span class="badge badge-retired">retired</span>
+        </td>
+        <td>
+          ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid} (${inst.rfidRef?.type || 'HF'})</span>` : '<span style="color: var(--text3); font-size: 11px;">Unassigned</span>'}
+        </td>
+        <td class="mono" style="font-size: 11px; color: var(--text3);">${inst.id.slice(0, 8)}...</td>
+        <td style="font-size: 11px; color: var(--text3);">${formatDate(inst.updatedAt)}</td>
+        <td style="text-align: right;">
+          <div style="display: inline-flex; gap: 6px;">
+            ${!isDel ? `
+              <button class="btn btn-sm" style="color: var(--success); border-color: rgba(34,197,94,0.3);" onclick="reactivateInstrument('${inst.id}')" title="Reactivate to Available">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Reactivate
+              </button>
+              <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
+            ` : `
+              <button class="btn btn-sm btn-success" onclick="restoreInstrument('${inst.id}')">Restore</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', true)">Permanent Delete</button>
+            `}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateRetiredPagination(pagination) {
+  const { total, page, limit, totalPages } = pagination;
+  const start = total === 0 ? 0 : (page - 1) * limit + 1;
+  const end = Math.min(page * limit, total);
+
+  const infoEl = document.getElementById('retired-pagination-info');
+  if (infoEl) {
+    infoEl.textContent = `Showing ${start} - ${end} of ${total} retired instruments`;
+  }
+
+  const indicatorEl = document.getElementById('retired-page-indicator');
+  if (indicatorEl) {
+    indicatorEl.textContent = `Page ${page} of ${totalPages || 1}`;
+  }
+
+  const prevBtn = document.getElementById('retired-prev-btn');
+  if (prevBtn) prevBtn.disabled = (page <= 1);
+
+  const nextBtn = document.getElementById('retired-next-btn');
+  if (nextBtn) nextBtn.disabled = (page >= totalPages || totalPages === 0);
+}
+
+function changeRetiredPage(delta) {
+  const targetPage = retiredCurrentPage + delta;
+  if (targetPage >= 1 && targetPage <= retiredTotalPages) {
+    loadRetiredInstruments(targetPage);
+  }
+}
+
+async function reactivateInstrument(id) {
+  const inst = retiredInstrumentsList.find(i => i.id === id) || instrumentsList.find(i => i.id === id);
+  const name = inst ? inst.name : 'this instrument';
+
+  if (!confirm(`Reactivate "${name}" and set its status back to "available"?`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/instruments/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'available' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`Instrument "${name}" reactivated to Available!`);
+      loadRetiredInstruments();
+      loadInstruments();
+    } else {
+      showToast(data.message || 'Failed to reactivate instrument', 'error');
+    }
+  } catch (err) {
+    showToast('Network error reactivating instrument', 'error');
+  }
+}
+
 

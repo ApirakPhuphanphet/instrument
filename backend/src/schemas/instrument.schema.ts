@@ -57,6 +57,7 @@ export type InstrumentParamsInput = z.infer<typeof InstrumentParamsSchema>;
 export const InstrumentQuerySchema = z.object({
   search: z.string().optional(),
   status: InstrumentStatusEnum.optional(),
+  excludeStatus: InstrumentStatusEnum.optional(),
   rfid: z.string().optional(),
   includeDeleted: z
     .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])

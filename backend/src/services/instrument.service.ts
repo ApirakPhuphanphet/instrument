@@ -65,7 +65,7 @@ export class InstrumentService {
    * List instruments with search, status filtering, and pagination.
    */
   async getInstruments(query: InstrumentQueryInput) {
-    const { search, status, rfid, includeDeleted, page, limit } = query;
+    const { search, status, excludeStatus, rfid, includeDeleted, page, limit } = query;
 
     const where: any = {};
 
@@ -82,6 +82,8 @@ export class InstrumentService {
 
     if (status) {
       where.status = status;
+    } else if (excludeStatus) {
+      where.status = { not: excludeStatus };
     }
 
     if (rfid) {
