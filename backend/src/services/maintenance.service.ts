@@ -73,7 +73,7 @@ export class MaintenanceService {
         },
         include: {
           instrument: {
-            select: { id: true, name: true, status: true, rfid: true }
+            select: { id: true, name: true, status: true, rfid: true, image_url: true }
           }
         }
       }),
@@ -132,7 +132,7 @@ export class MaintenanceService {
         },
         include: {
           instrument: {
-            select: { id: true, name: true, status: true, rfid: true }
+            select: { id: true, name: true, status: true, rfid: true, image_url: true }
           }
         }
       })
@@ -177,7 +177,7 @@ export class MaintenanceService {
         where,
         include: {
           instrument: {
-            select: { id: true, name: true, status: true, rfid: true }
+            select: { id: true, name: true, status: true, rfid: true, image_url: true }
           }
         },
         orderBy: { sent_at: 'desc' },
@@ -205,7 +205,7 @@ export class MaintenanceService {
       where: { id, deletedAt: null },
       include: {
         instrument: {
-          select: { id: true, name: true, status: true, rfid: true }
+          select: { id: true, name: true, status: true, rfid: true, image_url: true }
         }
       }
     });

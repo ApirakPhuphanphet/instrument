@@ -43,7 +43,8 @@ export const MaintenanceItemSchema = z.object({
         id: z.string().uuid(),
         name: z.string(),
         status: z.string(),
-        rfid: z.string().nullable()
+        rfid: z.string().nullable(),
+        image_url: z.string().nullable().optional()
     })
         .optional()
 });

@@ -39,7 +39,7 @@ export const transactionRoutes = async (fastify) => {
                             select: { id: true, name: true, rfid: true }
                         },
                         instrument: {
-                            select: { id: true, name: true, status: true, rfid: true }
+                            select: { id: true, name: true, status: true, rfid: true, image_url: true }
                         }
                     },
                     orderBy: { timestamp: 'desc' },

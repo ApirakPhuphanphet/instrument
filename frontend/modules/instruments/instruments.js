@@ -549,11 +549,16 @@ function renderMaintenance() {
     return `
       <tr>
         <td>
-          <div style="font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;">
-            <span>${instName}</span>
-            ${instRfid}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${renderInstrumentThumbnail(m.instrument || { image_url: null, name: instName }, 36)}
+            <div>
+              <div style="font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                <span>${instName}</span>
+                ${instRfid}
+              </div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${m.instrument_id}</div>
+            </div>
           </div>
-          <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${m.instrument_id}</div>
         </td>
         <td>${statusBadge}</td>
         <td style="font-size: 11.5px; color: var(--text);">${sentDateFormatted}</td>
@@ -767,11 +772,16 @@ function renderTransactions() {
         </td>
         <td>${typeBadge}</td>
         <td>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="font-weight: 600; color: var(--text);">${instName}</div>
-            ${instRfid}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${renderInstrumentThumbnail(tx.instrument || { image_url: null, name: instName }, 36)}
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="font-weight: 600; color: var(--text);">${instName}</div>
+                ${instRfid}
+              </div>
+              <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.instrument_id}</div>
+            </div>
           </div>
-          <div class="mono" style="font-size: 10.5px; color: var(--text3);">ID: ${tx.instrument_id}</div>
         </td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
