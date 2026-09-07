@@ -85,7 +85,7 @@ function renderInstruments() {
   if (!tbody) return;
 
   if (!instrumentsList.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text3); padding: 24px;">No instruments found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text3); padding: 24px;">No instruments found.</td></tr>`;
     if (grid) grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 32px;">No instruments found.</div>`;
     return;
   }
@@ -105,6 +105,9 @@ function renderInstruments() {
           </div>
         </td>
         <td><span class="badge badge-${inst.status}">${inst.status}</span></td>
+        <td>
+          ${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 11px;">${escapeHtml(inst.barcode)}</span>` : '<span style="color: var(--text3); font-size: 11px;">-</span>'}
+        </td>
         <td>
           ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid} (${inst.rfidRef?.type || 'HF'})</span>` : '<span style="color: var(--text3); font-size: 11px;">Unassigned</span>'}
         </td>
@@ -151,7 +154,8 @@ function renderInstruments() {
               <h4 style="font-size: 14px; font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</h4>
               <span class="badge badge-${inst.status}">${inst.status}</span>
             </div>
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+              ${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 10.5px;" title="Barcode">${escapeHtml(inst.barcode)}</span>` : ''}
               ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid}</span>` : '<span style="color: var(--text3); font-size: 11px;">No RFID Assigned</span>'}
             </div>
             <div class="mono" style="font-size: 11px; color: var(--text3);">ID: ${inst.id}</div>
@@ -366,8 +370,10 @@ function previewImageModal(fullUrl, downloadUrl, title) {
 function openAddInstrumentModal() {
   const nameEl = document.getElementById('new-inst-name');
   const statusEl = document.getElementById('new-inst-status');
+  const barcodeEl = document.getElementById('new-inst-barcode');
   if (nameEl) nameEl.value = '';
   if (statusEl) statusEl.value = 'available';
+  if (barcodeEl) barcodeEl.value = '';
   clearSelectedImage('new-inst');
   loadAvailableRfids('new-inst', 'HF');
   openModal('add-instrument-modal');
@@ -376,6 +382,7 @@ function openAddInstrumentModal() {
 async function submitCreateInstrument() {
   const name = document.getElementById('new-inst-name')?.value.trim();
   const status = document.getElementById('new-inst-status')?.value;
+  const barcode = document.getElementById('new-inst-barcode')?.value.trim() || null;
   const rfid = getSelectedRfidValue('new-inst');
   const image_url = document.getElementById('new-inst-image-url')?.value.trim() || null;
 
@@ -385,7 +392,7 @@ async function submitCreateInstrument() {
     const res = await fetch(`${API_BASE}/instruments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, rfid, image_url })
+      body: JSON.stringify({ name, status, barcode, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
@@ -406,6 +413,8 @@ function openEditInstrumentModal(id) {
   document.getElementById('edit-inst-id').value = inst.id;
   document.getElementById('edit-inst-name').value = inst.name;
   document.getElementById('edit-inst-status').value = inst.status;
+  const barcodeEl = document.getElementById('edit-inst-barcode');
+  if (barcodeEl) barcodeEl.value = inst.barcode || '';
   setModalImagePreview('edit-inst', inst.image_url || '');
   loadAvailableRfids('edit-inst', 'HF', inst.rfid || '');
   openModal('edit-instrument-modal');
@@ -415,6 +424,7 @@ async function submitUpdateInstrument() {
   const id = document.getElementById('edit-inst-id')?.value;
   const name = document.getElementById('edit-inst-name')?.value.trim();
   const status = document.getElementById('edit-inst-status')?.value;
+  const barcode = document.getElementById('edit-inst-barcode')?.value.trim() || null;
   const rfid = getSelectedRfidValue('edit-inst');
   const image_url = document.getElementById('edit-inst-image-url')?.value.trim() || null;
 
@@ -422,7 +432,7 @@ async function submitUpdateInstrument() {
     const res = await fetch(`${API_BASE}/instruments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, rfid, image_url })
+      body: JSON.stringify({ name, status, barcode, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
@@ -870,13 +880,13 @@ async function loadRetiredInstruments(page = retiredCurrentPage) {
     } else {
       showToast(data.message || 'Failed to load retired instruments', 'error');
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 24px;">Failed to load retired instruments</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--red); padding: 24px;">Failed to load retired instruments</td></tr>`;
       }
     }
   } catch (err) {
     showToast('Network error loading retired instruments', 'error');
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--red); padding: 24px;">Network error</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--red); padding: 24px;">Network error</td></tr>`;
     }
   }
 }
@@ -886,7 +896,7 @@ function renderRetiredInstruments() {
   if (!tbody) return;
 
   if (!retiredInstrumentsList.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text3); padding: 32px;">No retired instruments found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text3); padding: 32px;">No retired instruments found.</td></tr>`;
     return;
   }
 
@@ -905,6 +915,9 @@ function renderRetiredInstruments() {
         </td>
         <td>
           <span class="badge badge-retired">retired</span>
+        </td>
+        <td>
+          ${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 11px;">${escapeHtml(inst.barcode)}</span>` : '<span style="color: var(--text3); font-size: 11px;">-</span>'}
         </td>
         <td>
           ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid} (${inst.rfidRef?.type || 'HF'})</span>` : '<span style="color: var(--text3); font-size: 11px;">Unassigned</span>'}

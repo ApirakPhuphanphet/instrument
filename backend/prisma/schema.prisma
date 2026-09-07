@@ -72,6 +72,7 @@ model Instrument {
   status    InstrumentStatus @default(available)
   rfid      String?
   image_url String?          @map("image_url")
+  barcode   String?          @map("barcode")
   createdAt DateTime         @default(now()) @map("createdat") @db.Timestamptz
   updatedAt DateTime         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
   deletedAt DateTime?        @map("deletedat") @db.Timestamptz

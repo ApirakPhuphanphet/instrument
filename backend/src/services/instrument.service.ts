@@ -20,7 +20,7 @@ export class InstrumentService {
    * Create a new instrument with optional RFID assignment.
    */
   async createInstrument(data: CreateInstrumentInput) {
-    const { name, status, rfid, image_url } = data;
+    const { name, status, rfid, image_url, barcode } = data;
 
     if (rfid) {
       const rfidRecord = await prisma.rfid.findUnique({
@@ -54,7 +54,8 @@ export class InstrumentService {
         name,
         status: status || 'available',
         rfid: rfid || null,
-        image_url: image_url || null
+        image_url: image_url || null,
+        barcode: barcode || null
       },
       include: {
         rfidRef: true
@@ -66,7 +67,7 @@ export class InstrumentService {
    * List instruments with search, status filtering, and pagination.
    */
   async getInstruments(query: InstrumentQueryInput) {
-    const { search, status, excludeStatus, rfid, includeDeleted, page, limit } = query;
+    const { search, status, excludeStatus, rfid, barcode, includeDeleted, page, limit } = query;
 
     const where: any = {};
 
@@ -75,10 +76,11 @@ export class InstrumentService {
     }
 
     if (search) {
-      where.name = {
-        contains: search,
-        mode: 'insensitive'
-      };
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { rfid: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } }
+      ];
     }
 
     if (status) {
@@ -90,6 +92,13 @@ export class InstrumentService {
     if (rfid) {
       where.rfid = {
         contains: rfid,
+        mode: 'insensitive'
+      };
+    }
+
+    if (barcode) {
+      where.barcode = {
+        contains: barcode,
         mode: 'insensitive'
       };
     }
@@ -163,7 +172,7 @@ export class InstrumentService {
       );
     }
 
-    const { name, status, rfid, image_url } = data;
+    const { name, status, rfid, image_url, barcode } = data;
 
     if (rfid !== undefined && rfid !== null && rfid !== instrument.rfid) {
       const rfidRecord = await prisma.rfid.findUnique({
@@ -200,6 +209,7 @@ export class InstrumentService {
         ...(status !== undefined && { status }),
         ...(rfid !== undefined && { rfid }),
         ...(image_url !== undefined && { image_url }),
+        ...(barcode !== undefined && { barcode }),
         updatedAt: new Date()
       },
       include: {

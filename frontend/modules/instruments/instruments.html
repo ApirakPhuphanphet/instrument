@@ -99,6 +99,7 @@
           <tr>
             <th>Instrument Name</th>
             <th>Status</th>
+            <th>Barcode</th>
             <th>RFID Tag (HF)</th>
             <th>UUID</th>
             <th>Updated</th>
@@ -107,7 +108,7 @@
         </thead>
         <tbody id="inst-table-body">
           <tr>
-            <td colspan="6" style="text-align: center; color: var(--text3);">Loading instruments...</td>
+            <td colspan="7" style="text-align: center; color: var(--text3);">Loading instruments...</td>
           </tr>
         </tbody>
       </table>
@@ -358,6 +359,7 @@
             <tr>
               <th>Instrument Name</th>
               <th>Status</th>
+              <th>Barcode</th>
               <th>RFID Tag (HF)</th>
               <th>UUID</th>
               <th>Date Retired / Updated</th>
@@ -366,7 +368,7 @@
           </thead>
           <tbody id="retired-table-body">
             <tr>
-              <td colspan="6" style="text-align: center; color: var(--text3); padding: 24px;">Loading retired
+              <td colspan="7" style="text-align: center; color: var(--text3); padding: 24px;">Loading retired
                 instruments...</td>
             </tr>
           </tbody>
@@ -413,6 +415,11 @@
           style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
           Name *</label>
         <input id="new-inst-name" placeholder="e.g. Keysight Oscilloscope" style="width: 100%;">
+      </div>
+      <div>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Barcode Number (Optional)</label>
+        <input id="new-inst-barcode" class="mono" placeholder="e.g. BC-100234 or scan barcode..." style="width: 100%;">
       </div>
       <div>
         <label
@@ -481,6 +488,11 @@
           style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
           Name *</label>
         <input id="edit-inst-name" style="width: 100%;">
+      </div>
+      <div>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Barcode Number (Optional)</label>
+        <input id="edit-inst-barcode" class="mono" placeholder="e.g. BC-100234 or scan barcode..." style="width: 100%;">
       </div>
       <div>
         <label
