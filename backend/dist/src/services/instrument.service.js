@@ -12,7 +12,7 @@ export class InstrumentService {
      * Create a new instrument with optional RFID assignment.
      */
     async createInstrument(data) {
-        const { name, status, rfid, image_url, barcode } = data;
+        const { group_id, name, status, rfid, image_url, barcode } = data;
         if (rfid) {
             const rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
@@ -32,6 +32,7 @@ export class InstrumentService {
         }
         return prisma.instrument.create({
             data: {
+                group_id: group_id || null,
                 name,
                 status: status || 'available',
                 rfid: rfid || null,
@@ -39,6 +40,7 @@ export class InstrumentService {
                 barcode: barcode || null
             },
             include: {
+                group: true,
                 rfidRef: true
             }
         });
@@ -47,16 +49,20 @@ export class InstrumentService {
      * List instruments with search, status filtering, and pagination.
      */
     async getInstruments(query) {
-        const { search, status, excludeStatus, rfid, barcode, includeDeleted, page, limit } = query;
+        const { group_id, search, status, excludeStatus, rfid, barcode, includeDeleted, page, limit } = query;
         const where = {};
         if (!includeDeleted) {
             where.deletedAt = null;
+        }
+        if (group_id) {
+            where.group_id = group_id;
         }
         if (search) {
             where.OR = [
                 { name: { contains: search, mode: 'insensitive' } },
                 { rfid: { contains: search, mode: 'insensitive' } },
-                { barcode: { contains: search, mode: 'insensitive' } }
+                { barcode: { contains: search, mode: 'insensitive' } },
+                { group: { name: { contains: search, mode: 'insensitive' } } }
             ];
         }
         if (status) {
@@ -88,6 +94,7 @@ export class InstrumentService {
                     createdAt: 'desc'
                 },
                 include: {
+                    group: true,
                     rfidRef: true
                 }
             })
@@ -109,6 +116,7 @@ export class InstrumentService {
         const instrument = await prisma.instrument.findUnique({
             where: { id },
             include: {
+                group: true,
                 rfidRef: true
             }
         });
@@ -133,7 +141,7 @@ export class InstrumentService {
         if (instrument.deletedAt !== null) {
             throw new InstrumentServiceError(`Cannot update deleted instrument '${id}'. Restore the instrument first.`, 400);
         }
-        const { name, status, rfid, image_url, barcode } = data;
+        const { group_id, name, status, rfid, image_url, barcode } = data;
         if (rfid !== undefined && rfid !== null && rfid !== instrument.rfid) {
             const rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
@@ -155,6 +163,7 @@ export class InstrumentService {
         return prisma.instrument.update({
             where: { id },
             data: {
+                ...(group_id !== undefined && { group_id }),
                 ...(name !== undefined && { name }),
                 ...(status !== undefined && { status }),
                 ...(rfid !== undefined && { rfid }),
@@ -163,6 +172,7 @@ export class InstrumentService {
                 updatedAt: new Date()
             },
             include: {
+                group: true,
                 rfidRef: true
             }
         });
@@ -191,6 +201,7 @@ export class InstrumentService {
                 deletedAt: new Date()
             },
             include: {
+                group: true,
                 rfidRef: true
             }
         });
@@ -227,6 +238,7 @@ export class InstrumentService {
                 updatedAt: new Date()
             },
             include: {
+                group: true,
                 rfidRef: true
             }
         });

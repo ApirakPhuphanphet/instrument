@@ -1,8 +1,10 @@
 /**
- * Instruments Module Logic (including Maintenance sub-tab)
+ * Instruments Module Logic (Grouped view & Maintenance)
  */
 
 let instrumentsList = [];
+let instrumentGroupsList = [];
+let expandedGroupIds = new Set();
 let instViewMode = 'table';
 
 function setInstrumentView(mode) {
@@ -16,7 +18,7 @@ function setInstrumentView(mode) {
   if (gridView) gridView.style.display = mode === 'grid' ? 'grid' : 'none';
   if (tableBtn) tableBtn.style.borderColor = mode === 'table' ? 'var(--accent)' : 'var(--border)';
   if (gridBtn) gridBtn.style.borderColor = mode === 'grid' ? 'var(--accent)' : 'var(--border)';
-  renderInstruments();
+  renderInstrumentGroups();
 }
 
 function switchInstrumentTab(tabName) {
@@ -51,98 +53,259 @@ function switchInstrumentTab(tabName) {
 }
 
 async function loadInstruments() {
-  const status = document.getElementById('inst-filter-status')?.value || '';
+  const statusFilter = document.getElementById('inst-filter-status')?.value || '';
   const search = document.getElementById('inst-search-input')?.value || '';
   const includeDel = document.getElementById('inst-include-deleted')?.checked || false;
 
-  const params = new URLSearchParams({ limit: '100' });
-  if (status) {
-    params.set('status', status);
-  } else {
-    params.set('excludeStatus', 'retired');
-  }
+  const params = new URLSearchParams({ limit: '100', includeUnits: 'true' });
   if (search) params.set('search', search);
   if (includeDel) params.set('includeDeleted', 'true');
 
   try {
-    const res = await fetch(`${API_BASE}/instruments?${params}`);
+    const res = await fetch(`${API_BASE}/instrument-groups?${params}`);
     const data = await res.json();
     if (res.ok) {
-      instrumentsList = (data.data || []).filter(inst => status ? true : inst.status !== 'retired');
-      renderInstruments();
+      instrumentGroupsList = data.data || [];
+
+      // Flatten units list for fast lookup across app
+      instrumentsList = [];
+      instrumentGroupsList.forEach(g => {
+        if (g.instruments) {
+          instrumentsList.push(...g.instruments);
+        }
+      });
+
+      // Filter groups by status filter if chosen
+      let filteredGroups = instrumentGroupsList;
+      if (statusFilter === 'available') {
+        filteredGroups = filteredGroups.filter(g => (g.stats?.available || 0) > 0);
+      } else if (statusFilter === 'borrowed') {
+        filteredGroups = filteredGroups.filter(g => (g.stats?.borrowed || 0) > 0);
+      } else if (statusFilter === 'maintenance') {
+        filteredGroups = filteredGroups.filter(g => (g.stats?.maintenance || 0) > 0);
+      }
+
+      renderInstrumentGroups(filteredGroups);
       if (typeof updateDashboardStats === 'function') updateDashboardStats();
     } else {
-      showToast(data.message || 'Failed to load instruments', 'error');
+      showToast(data.message || 'Failed to load instrument groups', 'error');
     }
   } catch (err) {
     showToast('Error connecting to backend API', 'error');
   }
 }
 
-function renderInstruments() {
-  const tbody = document.getElementById('inst-table-body');
-  const grid = document.getElementById('inst-grid-view');
-  if (!tbody) return;
+function toggleGroupExpand(groupId) {
+  const card = document.getElementById(`group-card-${groupId}`);
+  if (!card) return;
+  if (expandedGroupIds.has(groupId)) {
+    expandedGroupIds.delete(groupId);
+    card.classList.remove('expanded');
+  } else {
+    expandedGroupIds.add(groupId);
+    card.classList.add('expanded');
+  }
+}
 
-  if (!instrumentsList.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text3); padding: 24px;">No instruments found.</td></tr>`;
-    if (grid) grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 32px;">No instruments found.</div>`;
+function toggleAllGroups() {
+  const allCardEls = document.querySelectorAll('.inst-group-card');
+  const toggleBtnText = document.getElementById('inst-toggle-all-text');
+
+  if (expandedGroupIds.size > 0) {
+    expandedGroupIds.clear();
+    allCardEls.forEach(el => el.classList.remove('expanded'));
+    if (toggleBtnText) toggleBtnText.textContent = 'Expand All';
+  } else {
+    instrumentGroupsList.forEach(g => expandedGroupIds.add(g.id));
+    allCardEls.forEach(el => el.classList.add('expanded'));
+    if (toggleBtnText) toggleBtnText.textContent = 'Collapse All';
+  }
+}
+
+function renderInstrumentGroups(groups = instrumentGroupsList) {
+  const container = document.getElementById('inst-groups-list');
+  const grid = document.getElementById('inst-grid-view');
+  if (!container) return;
+
+  if (!groups.length) {
+    container.innerHTML = `
+      <div class="card" style="text-align: center; color: var(--text3); padding: 48px;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; opacity: 0.5;">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <div style="font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px;">No Instrument Groups Found</div>
+        <p style="font-size: 12.5px; color: var(--text3); margin-bottom: 16px;">Create an instrument group to start organizing your physical instruments.</p>
+        <button class="btn btn-primary" onclick="openAddGroupModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Create Instrument Group</span>
+        </button>
+      </div>
+    `;
+    if (grid) grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 32px;">No instrument groups found.</div>`;
     return;
   }
 
-  // Render Table
-  tbody.innerHTML = instrumentsList.map(inst => {
-    const isDel = !!inst.deletedAt;
-    return `
-      <tr style="${isDel ? 'opacity: 0.6;' : ''}">
-        <td>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            ${renderInstrumentThumbnail(inst)}
-            <div>
-              <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
-              ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+  // Auto-expand groups on initial load so user immediately sees all units
+  if (expandedGroupIds.size === 0) {
+    groups.forEach(g => expandedGroupIds.add(g.id));
+  }
+
+  // Render Table / Accordion View
+  container.innerHTML = groups.map(group => {
+    const stats = group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0, retired: 0 };
+    const isExpanded = expandedGroupIds.has(group.id);
+
+    let availBadge = '';
+    if (stats.total === 0) {
+      availBadge = `<span class="badge" style="background: rgba(148,163,184,0.1); color: var(--text3); font-weight: 600;">0 Units</span>`;
+    } else if (stats.available > 0) {
+      availBadge = `<span class="badge badge-available" style="font-weight: 700; font-size: 12.5px; padding: 4px 10px;">${stats.available} / ${stats.total} Available</span>`;
+    } else {
+      availBadge = `<span class="badge badge-none-available" style="font-weight: 700; font-size: 12.5px; padding: 4px 10px;">0 / ${stats.total} Available</span>`;
+    }
+
+    const units = (group.instruments || []).filter(u => u.status !== 'retired');
+
+    const unitsRows = units.length ? units.map(inst => {
+      const isDel = !!inst.deletedAt;
+      return `
+        <tr style="${isDel ? 'opacity: 0.6;' : ''}">
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${renderInstrumentThumbnail(inst, 28)}
+              <div>
+                <span style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</span>
+                ${isDel ? ' <span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+              </div>
             </div>
-          </div>
-        </td>
-        <td><span class="badge badge-${inst.status}">${inst.status}</span></td>
-        <td>
-          ${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 11px;">${escapeHtml(inst.barcode)}</span>` : '<span style="color: var(--text3); font-size: 11px;">-</span>'}
-        </td>
-        <td>
-          ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid} (${inst.rfidRef?.type || 'HF'})</span>` : '<span style="color: var(--text3); font-size: 11px;">Unassigned</span>'}
-        </td>
-        <td class="mono" style="font-size: 11px; color: var(--text3);">${inst.id.slice(0, 8)}...</td>
-        <td style="font-size: 11px; color: var(--text3);">${formatDate(inst.updatedAt)}</td>
-        <td style="text-align: right;">
-          <div style="display: inline-flex; gap: 6px;">
-            ${!isDel ? `
-              ${inst.status === 'maintenance' ? `
-                <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}')">Bring Back</button>
-              ` : (inst.status === 'available' ? `
-                <button class="btn btn-sm" onclick="openSendMaintenanceModal('${inst.id}')" title="Send to Maintenance">Maintain</button>
-              ` : '')}
-              <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
-            ` : `
-              <button class="btn btn-sm btn-success" onclick="restoreInstrument('${inst.id}')">Restore</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', true)">Permanent Delete</button>
-            `}
-          </div>
+          </td>
+          <td><span class="badge badge-${inst.status}">${inst.status}</span></td>
+          <td>${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 11px;">${escapeHtml(inst.barcode)}</span>` : '<span style="color: var(--text3); font-size: 11px;">-</span>'}</td>
+          <td>${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid} (${inst.rfidRef?.type || 'HF'})</span>` : '<span style="color: var(--text3); font-size: 11px;">Unassigned</span>'}</td>
+          <td class="mono" style="font-size: 11px; color: var(--text3);">${inst.id.slice(0, 8)}...</td>
+          <td style="font-size: 11px; color: var(--text3);">${formatDate(inst.updatedAt)}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              ${!isDel ? `
+                ${inst.status === 'maintenance' ? `
+                  <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}')">Bring Back</button>
+                ` : (inst.status === 'available' ? `
+                  <button class="btn btn-sm" onclick="openSendMaintenanceModal('${inst.id}')" title="Send to Maintenance">Maintain</button>
+                ` : '')}
+                <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
+              ` : `
+                <button class="btn btn-sm btn-success" onclick="restoreInstrument('${inst.id}')">Restore</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', true)">Permanent Delete</button>
+              `}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') : `
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--text3); padding: 20px;">
+          No active units registered in this group yet. Click <strong>+ Add Unit</strong> to register one.
         </td>
       </tr>
     `;
+
+    return `
+      <div class="card inst-group-card ${isExpanded ? 'expanded' : ''}" id="group-card-${group.id}">
+        <!-- Group Header -->
+        <div class="inst-group-header" onclick="toggleGroupExpand('${group.id}')">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <button class="btn btn-sm btn-icon inst-group-chevron" style="pointer-events: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            ${renderInstrumentThumbnail(group, 44)}
+
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 15px; font-weight: 700; color: var(--text);">${escapeHtml(group.name)}</span>
+                ${group.brand ? `<span class="badge" style="background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); font-size: 11px; font-weight: 600;">${escapeHtml(group.brand)}${group.model ? ` · ${escapeHtml(group.model)}` : ''}</span>` : ''}
+              </div>
+              <div style="font-size: 12px; color: var(--text3); margin-top: 3px;">
+                ${group.description ? escapeHtml(group.description) : `${stats.total} total physical unit${stats.total === 1 ? '' : 's'}`}
+              </div>
+            </div>
+          </div>
+
+          <!-- Availability & Actions -->
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="text-align: right;">
+              <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
+                ${availBadge}
+              </div>
+              <div style="font-size: 11px; color: var(--text3); margin-top: 3px; display: flex; gap: 8px; justify-content: flex-end;">
+                ${stats.borrowed > 0 ? `<span style="color: var(--blue); font-weight: 500;">${stats.borrowed} borrowed</span>` : ''}
+                ${stats.maintenance > 0 ? `<span style="color: var(--orange); font-weight: 500;">${stats.maintenance} maintenance</span>` : ''}
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation();">
+              <button class="btn btn-sm btn-primary" onclick="openAddInstrumentModal('${group.id}')" title="Add physical unit to this group">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Unit</span>
+              </button>
+              <button class="btn btn-sm" onclick="openEditGroupModal('${group.id}')" title="Edit Group">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteGroup('${group.id}')" title="Delete Group">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nested Physical Units Sub-Table -->
+        <div class="inst-group-units-container">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 4px 4px 4px;">
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px;">
+              Physical Units (${units.length})
+            </div>
+            <button class="btn btn-sm" onclick="openAddInstrumentModal('${group.id}')" style="font-size: 11px; padding: 3px 8px;">
+              + Register Another Unit
+            </button>
+          </div>
+          <table class="inst-group-units-table">
+            <thead>
+              <tr>
+                <th>Unit Identifier / Name</th>
+                <th>Status</th>
+                <th>Barcode</th>
+                <th>RFID Tag (HF)</th>
+                <th>UUID</th>
+                <th>Updated</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${unitsRows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
   }).join('');
 
-  // Render Grid
+  // Render Grid View
   if (grid) {
-    grid.innerHTML = instrumentsList.map(inst => {
-      const isDel = !!inst.deletedAt;
-      const fullImgUrl = inst.image_url ? (inst.image_url.startsWith('http') ? inst.image_url : `${API_BASE}${inst.image_url}`) : '';
+    grid.innerHTML = groups.map(group => {
+      const stats = group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0 };
+      const fullImgUrl = group.image_url ? (group.image_url.startsWith('http') ? group.image_url : `${API_BASE}${group.image_url}`) : '';
+      const availPct = stats.total > 0 ? Math.round((stats.available / stats.total) * 100) : 0;
       return `
-        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 0; overflow: hidden; ${isDel ? 'opacity: 0.6;' : ''}">
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 0; overflow: hidden;">
           ${fullImgUrl ? `
             <div style="width: 100%; height: 130px; background: #0b0f19; border-bottom: 1px solid var(--border); position: relative; overflow: hidden;">
-              <img src="${fullImgUrl}" alt="${escapeHtml(inst.name)}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="previewImageModal('${fullImgUrl}', '${fullImgUrl}/download', '${escapeHtml(inst.name)}')">
+              <img src="${fullImgUrl}" alt="${escapeHtml(group.name)}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="previewImageModal('${fullImgUrl}', '${fullImgUrl}/download', '${escapeHtml(group.name)}')">
               <a href="${fullImgUrl}/download" download class="btn btn-sm" style="position: absolute; top: 8px; right: 8px; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px); padding: 4px 8px; font-size: 11px; border-color: rgba(255,255,255,0.2);" title="Download image">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>Download</span>
@@ -150,35 +313,56 @@ function renderInstruments() {
             </div>
           ` : ''}
           <div style="padding: 16px;">
-            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
-              <h4 style="font-size: 14px; font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</h4>
-              <span class="badge badge-${inst.status}">${inst.status}</span>
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px;">
+              <div>
+                <h4 style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px;">${escapeHtml(group.name)}</h4>
+                ${group.brand ? `<span style="font-size: 11.5px; color: #818cf8; font-weight: 500;">${escapeHtml(group.brand)}${group.model ? ` · ${escapeHtml(group.model)}` : ''}</span>` : ''}
+              </div>
+              <span class="badge ${stats.available > 0 ? 'badge-available' : 'badge-none-available'}" style="font-weight: 700; font-size: 12px;">
+                ${stats.available} / ${stats.total} Avail
+              </span>
             </div>
-            <div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-              ${inst.barcode ? `<span class="mono badge" style="background: rgba(148,163,184,0.1); color: var(--text); border: 1px solid var(--border); font-size: 10.5px;" title="Barcode">${escapeHtml(inst.barcode)}</span>` : ''}
-              ${inst.rfid ? `<span class="mono badge badge-rfid">${inst.rfid}</span>` : '<span style="color: var(--text3); font-size: 11px;">No RFID Assigned</span>'}
+
+            <!-- Availability Bar -->
+            <div style="margin: 10px 0 8px 0;">
+              <div style="width: 100%; height: 6px; background: rgba(148,163,184,0.15); border-radius: 3px; overflow: hidden; display: flex;">
+                <div style="width: ${availPct}%; height: 100%; background: #22c55e;"></div>
+                <div style="width: ${stats.total > 0 ? Math.round((stats.borrowed / stats.total) * 100) : 0}%; height: 100%; background: #3b82f6;"></div>
+                <div style="width: ${stats.total > 0 ? Math.round((stats.maintenance / stats.total) * 100) : 0}%; height: 100%; background: #f59e0b;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-top: 4px;">
+                <span>${stats.available} Available</span>
+                <span>${stats.borrowed} Borrowed</span>
+                <span>${stats.maintenance} Maintenance</span>
+              </div>
             </div>
-            <div class="mono" style="font-size: 11px; color: var(--text3);">ID: ${inst.id}</div>
+
+            <div style="font-size: 11.5px; color: var(--text3); margin-top: 6px;">
+              ${(group.instruments || []).length} registered unit${(group.instruments || []).length === 1 ? '' : 's'}
+            </div>
           </div>
 
-          <div style="border-top: 1px solid var(--border-muted); padding: 10px 16px; display: flex; justify-content: flex-end; gap: 6px;">
-            ${!isDel ? `
-              ${inst.status === 'maintenance' ? `
-                <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}')">Bring Back</button>
-              ` : (inst.status === 'available' ? `
-                <button class="btn btn-sm" onclick="openSendMaintenanceModal('${inst.id}')" title="Send to Maintenance">Maintain</button>
-              ` : '')}
-              <button class="btn btn-sm" onclick="openEditInstrumentModal('${inst.id}')">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', false)">Delete</button>
-            ` : `
-              <button class="btn btn-sm btn-success" onclick="restoreInstrument('${inst.id}')">Restore</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteInstrument('${inst.id}', true)">Purge</button>
-            `}
+          <div style="border-top: 1px solid var(--border-muted); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+            <button class="btn btn-sm" onclick="setInstrumentView('table'); toggleGroupExpand('${group.id}')">
+              Manage Units (${(group.instruments || []).length})
+            </button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-sm btn-primary" onclick="openAddInstrumentModal('${group.id}')" title="Add Unit">
+                + Unit
+              </button>
+              <button class="btn btn-sm" onclick="openEditGroupModal('${group.id}')" title="Edit Group">
+                Edit
+              </button>
+            </div>
           </div>
         </div>
       `;
     }).join('');
   }
+}
+
+function renderInstruments() {
+  renderInstrumentGroups();
 }
 
 // ── RFID Dropdown Helpers ─────────────────────────────────────────────
@@ -366,12 +550,136 @@ function previewImageModal(fullUrl, downloadUrl, title) {
   openModal('preview-image-modal');
 }
 
-// ── Instruments CRUD ──────────────────────────────────────────────────
-function openAddInstrumentModal() {
+// ── Instrument Groups CRUD ────────────────────────────────────────────
+function populateGroupSelect(selectId, selectedGroupId = '') {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  if (!instrumentGroupsList.length) {
+    select.innerHTML = '<option value="">-- No Groups (Create a group first) --</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">-- Select Instrument Group --</option>' +
+    instrumentGroupsList.map(g => `
+      <option value="${g.id}" ${g.id === selectedGroupId ? 'selected' : ''}>
+        ${escapeHtml(g.name)}${g.brand ? ` (${escapeHtml(g.brand)})` : ''}
+      </option>
+    `).join('');
+}
+
+function openAddGroupModal() {
+  const nameEl = document.getElementById('new-group-name');
+  const brandEl = document.getElementById('new-group-brand');
+  const modelEl = document.getElementById('new-group-model');
+  const descEl = document.getElementById('new-group-desc');
+  if (nameEl) nameEl.value = '';
+  if (brandEl) brandEl.value = '';
+  if (modelEl) modelEl.value = '';
+  if (descEl) descEl.value = '';
+  clearSelectedImage('new-group');
+  openModal('add-group-modal');
+}
+
+async function submitCreateGroup() {
+  const name = document.getElementById('new-group-name')?.value.trim();
+  const brand = document.getElementById('new-group-brand')?.value.trim() || null;
+  const model = document.getElementById('new-group-model')?.value.trim() || null;
+  const description = document.getElementById('new-group-desc')?.value.trim() || null;
+  const image_url = document.getElementById('new-group-image-url')?.value.trim() || null;
+
+  if (!name) return showToast('Group name is required', 'error');
+
+  try {
+    const res = await fetch(`${API_BASE}/instrument-groups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, brand, model, description, image_url })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Instrument group created!');
+      closeModal('add-group-modal');
+      expandedGroupIds.add(data.data.id);
+      loadInstruments();
+    } else {
+      showToast(data.message || 'Failed to create group', 'error');
+    }
+  } catch (err) {
+    showToast('Network error while creating group', 'error');
+  }
+}
+
+function openEditGroupModal(id) {
+  const group = instrumentGroupsList.find(g => g.id === id);
+  if (!group) return;
+  document.getElementById('edit-group-id').value = group.id;
+  document.getElementById('edit-group-name').value = group.name;
+  document.getElementById('edit-group-brand').value = group.brand || '';
+  document.getElementById('edit-group-model').value = group.model || '';
+  document.getElementById('edit-group-desc').value = group.description || '';
+  setModalImagePreview('edit-group', group.image_url || '');
+  openModal('edit-group-modal');
+}
+
+async function submitUpdateGroup() {
+  const id = document.getElementById('edit-group-id')?.value;
+  const name = document.getElementById('edit-group-name')?.value.trim();
+  const brand = document.getElementById('edit-group-brand')?.value.trim() || null;
+  const model = document.getElementById('edit-group-model')?.value.trim() || null;
+  const description = document.getElementById('edit-group-desc')?.value.trim() || null;
+  const image_url = document.getElementById('edit-group-image-url')?.value.trim() || null;
+
+  if (!name) return showToast('Group name cannot be empty', 'error');
+
+  try {
+    const res = await fetch(`${API_BASE}/instrument-groups/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, brand, model, description, image_url })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Instrument group updated!');
+      closeModal('edit-group-modal');
+      loadInstruments();
+    } else {
+      showToast(data.message || 'Update failed', 'error');
+    }
+  } catch (err) {
+    showToast('Network error updating group', 'error');
+  }
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Are you sure you want to delete this instrument group?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/instrument-groups/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message || 'Instrument group deleted');
+      loadInstruments();
+    } else {
+      showToast(data.message || 'Failed to delete group', 'error');
+    }
+  } catch (err) {
+    showToast('Network error deleting group', 'error');
+  }
+}
+
+// ── Physical Instrument Units CRUD ─────────────────────────────────────
+function openAddInstrumentModal(preselectedGroupId = '') {
+  populateGroupSelect('new-inst-group', preselectedGroupId);
   const nameEl = document.getElementById('new-inst-name');
   const statusEl = document.getElementById('new-inst-status');
   const barcodeEl = document.getElementById('new-inst-barcode');
-  if (nameEl) nameEl.value = '';
+  if (nameEl) {
+    if (preselectedGroupId) {
+      const g = instrumentGroupsList.find(x => x.id === preselectedGroupId);
+      const nextNum = (g?.instruments?.length || 0) + 1;
+      nameEl.value = g ? `${g.name} #${nextNum}` : '';
+    } else {
+      nameEl.value = '';
+    }
+  }
   if (statusEl) statusEl.value = 'available';
   if (barcodeEl) barcodeEl.value = '';
   clearSelectedImage('new-inst');
@@ -380,24 +688,26 @@ function openAddInstrumentModal() {
 }
 
 async function submitCreateInstrument() {
+  const group_id = document.getElementById('new-inst-group')?.value || null;
   const name = document.getElementById('new-inst-name')?.value.trim();
   const status = document.getElementById('new-inst-status')?.value;
   const barcode = document.getElementById('new-inst-barcode')?.value.trim() || null;
   const rfid = getSelectedRfidValue('new-inst');
   const image_url = document.getElementById('new-inst-image-url')?.value.trim() || null;
 
-  if (!name) return showToast('Instrument name is required', 'error');
+  if (!name) return showToast('Unit name is required', 'error');
 
   try {
     const res = await fetch(`${API_BASE}/instruments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, barcode, rfid, image_url })
+      body: JSON.stringify({ group_id, name, status, barcode, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Instrument created successfully!');
+      showToast('Physical unit added successfully!');
       closeModal('add-instrument-modal');
+      if (group_id) expandedGroupIds.add(group_id);
       loadInstruments();
     } else {
       showToast(data.message || 'Failed to create instrument', 'error');
@@ -411,6 +721,7 @@ function openEditInstrumentModal(id) {
   const inst = instrumentsList.find(i => i.id === id) || (typeof retiredInstrumentsList !== 'undefined' && retiredInstrumentsList.find(i => i.id === id));
   if (!inst) return;
   document.getElementById('edit-inst-id').value = inst.id;
+  populateGroupSelect('edit-inst-group', inst.group_id || '');
   document.getElementById('edit-inst-name').value = inst.name;
   document.getElementById('edit-inst-status').value = inst.status;
   const barcodeEl = document.getElementById('edit-inst-barcode');
@@ -422,6 +733,7 @@ function openEditInstrumentModal(id) {
 
 async function submitUpdateInstrument() {
   const id = document.getElementById('edit-inst-id')?.value;
+  const group_id = document.getElementById('edit-inst-group')?.value || null;
   const name = document.getElementById('edit-inst-name')?.value.trim();
   const status = document.getElementById('edit-inst-status')?.value;
   const barcode = document.getElementById('edit-inst-barcode')?.value.trim() || null;
@@ -432,11 +744,11 @@ async function submitUpdateInstrument() {
     const res = await fetch(`${API_BASE}/instruments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, barcode, rfid, image_url })
+      body: JSON.stringify({ group_id, name, status, barcode, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Instrument updated successfully');
+      showToast('Physical unit updated successfully');
       closeModal('edit-instrument-modal');
       loadInstruments();
       if (typeof loadRetiredInstruments === 'function') loadRetiredInstruments();
@@ -909,6 +1221,7 @@ function renderRetiredInstruments() {
             ${renderInstrumentThumbnail(inst)}
             <div>
               <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
+              ${inst.group ? `<div style="font-size: 11px; color: #818cf8;">Group: ${escapeHtml(inst.group.name)}${inst.group.brand ? ` (${escapeHtml(inst.group.brand)})` : ''}</div>` : ''}
               ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
             </div>
           </div>

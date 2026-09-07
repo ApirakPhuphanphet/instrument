@@ -44,16 +44,15 @@
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
         <!-- Status Filter -->
         <select id="inst-filter-status" onchange="loadInstruments()" style="font-size: 12px;">
-          <option value="">All Statuses (Excl. Retired)</option>
-          <option value="available">Available</option>
-          <option value="borrowed">Borrowed</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="lost">Lost</option>
+          <option value="">All Groups</option>
+          <option value="available">Has Available Units</option>
+          <option value="borrowed">Has Borrowed Units</option>
+          <option value="maintenance">Has Maintenance Units</option>
         </select>
 
         <!-- Search input -->
-        <input id="inst-search-input" placeholder="Filter by name..." oninput="debounce(loadInstruments, 300)()"
-          style="font-size: 12px; width: 200px;">
+        <input id="inst-search-input" placeholder="Search group, brand, barcode, rfid..." oninput="debounce(loadInstruments, 300)()"
+          style="font-size: 12px; width: 240px;">
 
         <!-- Include Deleted Checkbox -->
         <label
@@ -64,8 +63,17 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- Expand / Collapse All -->
+        <button class="btn btn-sm" onclick="toggleAllGroups()" id="inst-toggle-all-btn" title="Expand or Collapse All Groups">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="7 13 12 18 17 13"></polyline>
+            <polyline points="7 6 12 11 17 6"></polyline>
+          </svg>
+          <span id="inst-toggle-all-text">Expand All</span>
+        </button>
+
         <!-- View Mode Switch -->
-        <button class="btn btn-sm" id="inst-view-table-btn" onclick="setInstrumentView('table')" title="Table View">
+        <button class="btn btn-sm" id="inst-view-table-btn" onclick="setInstrumentView('table')" title="Grouped List View">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
@@ -81,37 +89,33 @@
           </svg>
         </button>
 
-        <!-- Add Button -->
+        <!-- New Group Button -->
+        <button class="btn" onclick="openAddGroupModal()" title="Create a new instrument group">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" />
+            <rect x="14" y="3" width="7" height="7" />
+            <rect x="14" y="14" width="7" height="7" />
+            <rect x="3" y="14" width="7" height="7" />
+          </svg>
+          <span>New Group</span>
+        </button>
+
+        <!-- Add Unit Button -->
         <button class="btn btn-primary" onclick="openAddInstrumentModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          <span>New Instrument</span>
+          <span>New Unit</span>
         </button>
       </div>
     </div>
 
-    <!-- Table View -->
-    <div id="inst-table-view" class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Instrument Name</th>
-            <th>Status</th>
-            <th>Barcode</th>
-            <th>RFID Tag (HF)</th>
-            <th>UUID</th>
-            <th>Updated</th>
-            <th style="text-align: right;">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="inst-table-body">
-          <tr>
-            <td colspan="7" style="text-align: center; color: var(--text3);">Loading instruments...</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Grouped Table / Accordion View -->
+    <div id="inst-table-view">
+      <div id="inst-groups-list">
+        <div style="text-align: center; color: var(--text3); padding: 32px;">Loading instrument groups...</div>
+      </div>
     </div>
 
     <!-- Grid View -->
@@ -402,19 +406,140 @@
   </div>
 </section>
 
-<!-- ── MODAL: Add Instrument ── -->
+<!-- ── MODAL: Add Group ── -->
+<div class="modal-overlay" id="add-group-modal" onclick="closeModalOnBackdrop(event, 'add-group-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">New Instrument Group</h3>
+      <button class="btn btn-sm" onclick="closeModal('add-group-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Group Name *</label>
+        <input id="new-group-name" placeholder="e.g. Scope, Multimeter, Function Generator" style="width: 100%;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Brand (Optional)</label>
+          <input id="new-group-brand" placeholder="e.g. Tektronix, Keysight, Fluke" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Model (Optional)</label>
+          <input id="new-group-model" placeholder="e.g. TBS1052B, 87V, DSOX1204G" style="width: 100%;">
+        </div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Description (Optional)</label>
+        <textarea id="new-group-desc" rows="2" placeholder="Brief specification or notes..." style="width: 100%; resize: vertical;"></textarea>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Group Image (Optional)</label>
+        <input type="hidden" id="new-group-image-url">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div id="new-group-image-preview-box" style="width: 58px; height: 58px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-surface); overflow: hidden; flex-shrink: 0;">
+            <svg id="new-group-image-placeholder" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <img id="new-group-image-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+              <label class="btn btn-sm" style="cursor: pointer; margin: 0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Choose Image</span>
+                <input type="file" id="new-group-image-file" accept="image/*" style="display: none;" onchange="handleImageFileUpload(event, 'new-group')">
+              </label>
+              <button type="button" class="btn btn-sm" id="new-group-image-remove-btn" onclick="clearSelectedImage('new-group')" style="display: none; color: var(--red);">Remove</button>
+            </div>
+            <div style="font-size: 10.5px; color: var(--text3);" id="new-group-image-status">PNG, JPG, WEBP, GIF, SVG up to 10MB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('add-group-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCreateGroup()">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Edit Group ── -->
+<div class="modal-overlay" id="edit-group-modal" onclick="closeModalOnBackdrop(event, 'edit-group-modal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Edit Instrument Group</h3>
+      <button class="btn btn-sm" onclick="closeModal('edit-group-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-group-id">
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Group Name *</label>
+        <input id="edit-group-name" style="width: 100%;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Brand (Optional)</label>
+          <input id="edit-group-brand" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Model (Optional)</label>
+          <input id="edit-group-model" style="width: 100%;">
+        </div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Description (Optional)</label>
+        <textarea id="edit-group-desc" rows="2" style="width: 100%; resize: vertical;"></textarea>
+      </div>
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Group Image</label>
+        <input type="hidden" id="edit-group-image-url">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <div id="edit-group-image-preview-box" style="width: 58px; height: 58px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-surface); overflow: hidden; flex-shrink: 0;">
+            <svg id="edit-group-image-placeholder" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <img id="edit-group-image-img" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+          </div>
+          <div style="flex: 1;">
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: wrap;">
+              <label class="btn btn-sm" style="cursor: pointer; margin: 0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Upload New</span>
+                <input type="file" id="edit-group-image-file" accept="image/*" style="display: none;" onchange="handleImageFileUpload(event, 'edit-group')">
+              </label>
+              <button type="button" class="btn btn-sm" id="edit-group-image-download-btn" onclick="downloadCurrentInstrumentImage('edit-group')" style="display: none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download</span>
+              </button>
+              <button type="button" class="btn btn-sm" id="edit-group-image-remove-btn" onclick="clearSelectedImage('edit-group')" style="display: none; color: var(--red);">Remove</button>
+            </div>
+            <div style="font-size: 10.5px; color: var(--text3);" id="edit-group-image-status">PNG, JPG, WEBP, GIF, SVG up to 10MB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('edit-group-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitUpdateGroup()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add Instrument Unit ── -->
 <div class="modal-overlay" id="add-instrument-modal" onclick="closeModalOnBackdrop(event, 'add-instrument-modal')">
   <div class="modal-box">
     <div class="modal-header">
-      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Add Instrument</h3>
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Add Physical Instrument Unit</h3>
       <button class="btn btn-sm" onclick="closeModal('add-instrument-modal')">&times;</button>
     </div>
     <div class="modal-body">
       <div>
         <label
-          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
-          Name *</label>
-        <input id="new-inst-name" placeholder="e.g. Keysight Oscilloscope" style="width: 100%;">
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Group *</label>
+        <select id="new-inst-group" style="width: 100%;">
+          <option value="">-- Select Instrument Group --</option>
+        </select>
+      </div>
+      <div>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Unit Name / Identifier *</label>
+        <input id="new-inst-name" placeholder="e.g. Scope #1, SN-8921" style="width: 100%;">
       </div>
       <div>
         <label
@@ -446,7 +571,7 @@
           tags, or enter custom.</div>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Image (Optional)</label>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Unit Image (Optional)</label>
         <input type="hidden" id="new-inst-image-url">
         <div style="display: flex; gap: 12px; align-items: center;">
           <div id="new-inst-image-preview-box" style="width: 58px; height: 58px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-surface); overflow: hidden; flex-shrink: 0;">
@@ -469,7 +594,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('add-instrument-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitCreateInstrument()">Create Instrument</button>
+      <button class="btn btn-primary" onclick="submitCreateInstrument()">Create Unit</button>
     </div>
   </div>
 </div>
@@ -478,15 +603,21 @@
 <div class="modal-overlay" id="edit-instrument-modal" onclick="closeModalOnBackdrop(event, 'edit-instrument-modal')">
   <div class="modal-box">
     <div class="modal-header">
-      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Edit Instrument</h3>
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--text);">Edit Physical Unit</h3>
       <button class="btn btn-sm" onclick="closeModal('edit-instrument-modal')">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="edit-inst-id">
       <div>
         <label
-          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument
-          Name *</label>
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Group</label>
+        <select id="edit-inst-group" style="width: 100%;">
+          <option value="">-- Select Group --</option>
+        </select>
+      </div>
+      <div>
+        <label
+          style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Unit Name / Identifier *</label>
         <input id="edit-inst-name" style="width: 100%;">
       </div>
       <div>
@@ -519,7 +650,7 @@
           or keep current tag.</div>
       </div>
       <div>
-        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Instrument Image</label>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">Unit Image</label>
         <input type="hidden" id="edit-inst-image-url">
         <div style="display: flex; gap: 12px; align-items: center;">
           <div id="edit-inst-image-preview-box" style="width: 58px; height: 58px; border-radius: 8px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-surface); overflow: hidden; flex-shrink: 0;">
