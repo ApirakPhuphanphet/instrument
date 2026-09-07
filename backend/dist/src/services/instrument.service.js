@@ -12,7 +12,7 @@ export class InstrumentService {
      * Create a new instrument with optional RFID assignment.
      */
     async createInstrument(data) {
-        const { name, status, rfid } = data;
+        const { name, status, rfid, image_url } = data;
         if (rfid) {
             const rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
@@ -34,7 +34,8 @@ export class InstrumentService {
             data: {
                 name,
                 status: status || 'available',
-                rfid: rfid || null
+                rfid: rfid || null,
+                image_url: image_url || null
             },
             include: {
                 rfidRef: true
@@ -45,7 +46,7 @@ export class InstrumentService {
      * List instruments with search, status filtering, and pagination.
      */
     async getInstruments(query) {
-        const { search, status, rfid, includeDeleted, page, limit } = query;
+        const { search, status, excludeStatus, rfid, includeDeleted, page, limit } = query;
         const where = {};
         if (!includeDeleted) {
             where.deletedAt = null;
@@ -58,6 +59,9 @@ export class InstrumentService {
         }
         if (status) {
             where.status = status;
+        }
+        else if (excludeStatus) {
+            where.status = { not: excludeStatus };
         }
         if (rfid) {
             where.rfid = {
@@ -121,7 +125,7 @@ export class InstrumentService {
         if (instrument.deletedAt !== null) {
             throw new InstrumentServiceError(`Cannot update deleted instrument '${id}'. Restore the instrument first.`, 400);
         }
-        const { name, status, rfid } = data;
+        const { name, status, rfid, image_url } = data;
         if (rfid !== undefined && rfid !== null && rfid !== instrument.rfid) {
             const rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
@@ -146,6 +150,7 @@ export class InstrumentService {
                 ...(name !== undefined && { name }),
                 ...(status !== undefined && { status }),
                 ...(rfid !== undefined && { rfid }),
+                ...(image_url !== undefined && { image_url }),
                 updatedAt: new Date()
             },
             include: {

@@ -14,6 +14,7 @@ import {
 
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
+import multipart from '@fastify/multipart';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -23,6 +24,7 @@ import { rfidRoutes } from './routes/rfid.js';
 import { userRoutes } from './routes/user.js';
 import { instrumentRoutes } from './routes/instrument.js';
 import { maintenanceRoutes } from './routes/maintenance.js';
+import { imageRoutes } from './routes/image.js';
 import { prisma } from './lib/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +44,12 @@ export async function buildApp() {
   });
 
   await app.register(formbody);
+
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB limit
+    }
+  });
 
   await app.register(fastifyStatic, {
     root: resolve(__dirname, '../../frontend'),
@@ -71,6 +79,7 @@ export async function buildApp() {
   await app.register(userRoutes);
   await app.register(instrumentRoutes);
   await app.register(maintenanceRoutes);
+  await app.register(imageRoutes);
 
   return app;
 }

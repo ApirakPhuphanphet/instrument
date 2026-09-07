@@ -96,8 +96,13 @@ function renderInstruments() {
     return `
       <tr style="${isDel ? 'opacity: 0.6;' : ''}">
         <td>
-          <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
-          ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${renderInstrumentThumbnail(inst)}
+            <div>
+              <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
+              ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+            </div>
+          </div>
         </td>
         <td><span class="badge badge-${inst.status}">${inst.status}</span></td>
         <td>
@@ -129,9 +134,19 @@ function renderInstruments() {
   if (grid) {
     grid.innerHTML = instrumentsList.map(inst => {
       const isDel = !!inst.deletedAt;
+      const fullImgUrl = inst.image_url ? (inst.image_url.startsWith('http') ? inst.image_url : `${API_BASE}${inst.image_url}`) : '';
       return `
-        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px; ${isDel ? 'opacity: 0.6;' : ''}">
-          <div>
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 0; overflow: hidden; ${isDel ? 'opacity: 0.6;' : ''}">
+          ${fullImgUrl ? `
+            <div style="width: 100%; height: 130px; background: #0b0f19; border-bottom: 1px solid var(--border); position: relative; overflow: hidden;">
+              <img src="${fullImgUrl}" alt="${escapeHtml(inst.name)}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="previewImageModal('${fullImgUrl}', '${fullImgUrl}/download', '${escapeHtml(inst.name)}')">
+              <a href="${fullImgUrl}/download" download class="btn btn-sm" style="position: absolute; top: 8px; right: 8px; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px); padding: 4px 8px; font-size: 11px; border-color: rgba(255,255,255,0.2);" title="Download image">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download</span>
+              </a>
+            </div>
+          ` : ''}
+          <div style="padding: 16px;">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
               <h4 style="font-size: 14px; font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</h4>
               <span class="badge badge-${inst.status}">${inst.status}</span>
@@ -142,7 +157,7 @@ function renderInstruments() {
             <div class="mono" style="font-size: 11px; color: var(--text3);">ID: ${inst.id}</div>
           </div>
 
-          <div style="border-top: 1px solid var(--border-muted); padding-top: 10px; display: flex; justify-content: flex-end; gap: 6px;">
+          <div style="border-top: 1px solid var(--border-muted); padding: 10px 16px; display: flex; justify-content: flex-end; gap: 6px;">
             ${!isDel ? `
               ${inst.status === 'maintenance' ? `
                 <button class="btn btn-sm btn-success" onclick="quickReturnInstrumentMaintenance('${inst.id}')">Bring Back</button>
@@ -233,12 +248,127 @@ function getSelectedRfidValue(prefix) {
   return select.value.trim() || null;
 }
 
+// ── Instrument Image Helpers ──────────────────────────────────────────
+function renderInstrumentThumbnail(inst, size = 36) {
+  if (inst.image_url) {
+    const fullUrl = inst.image_url.startsWith('http') ? inst.image_url : `${API_BASE}${inst.image_url}`;
+    const downloadUrl = `${fullUrl}/download`;
+    return `
+      <div class="inst-thumb-wrapper" title="Click to view / download image" onclick="previewImageModal('${fullUrl}', '${downloadUrl}', '${escapeHtml(inst.name)}')" style="width: ${size}px; height: ${size}px; border-radius: 6px; overflow: hidden; background: #0b0f19; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+        <img src="${fullUrl}" alt="${escapeHtml(inst.name)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; color: var(--text3);">
+          <svg width="${size * 0.45}" height="${size * 0.45}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div style="width: ${size}px; height: ${size}px; border-radius: 6px; background: rgba(59,130,246,0.06); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text3);">
+      <svg width="${size * 0.45}" height="${size * 0.45}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    </div>
+  `;
+}
+
+async function handleImageFileUpload(event, prefix) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById(`${prefix}-image-status`);
+  if (statusEl) statusEl.textContent = `Uploading ${file.name}...`;
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE}/images/upload`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    if (res.ok && data.data?.url) {
+      setModalImagePreview(prefix, data.data.url);
+      if (statusEl) statusEl.textContent = `Uploaded: ${file.name}`;
+      showToast('Image uploaded successfully!');
+    } else {
+      if (statusEl) statusEl.textContent = 'Upload failed. Try again.';
+      showToast(data.message || 'Failed to upload image', 'error');
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = 'Upload error.';
+    showToast('Network error uploading image', 'error');
+  }
+}
+
+function setModalImagePreview(prefix, imageUrl) {
+  const urlInput = document.getElementById(`${prefix}-image-url`);
+  const imgEl = document.getElementById(`${prefix}-image-img`);
+  const placeholder = document.getElementById(`${prefix}-image-placeholder`);
+  const removeBtn = document.getElementById(`${prefix}-image-remove-btn`);
+  const downloadBtn = document.getElementById(`${prefix}-image-download-btn`);
+
+  if (urlInput) urlInput.value = imageUrl || '';
+
+  if (imageUrl) {
+    const fullUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE}${imageUrl}`;
+    if (imgEl) {
+      imgEl.src = fullUrl;
+      imgEl.style.display = 'block';
+    }
+    if (placeholder) placeholder.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'inline-flex';
+    if (downloadBtn) downloadBtn.style.display = 'inline-flex';
+  } else {
+    if (imgEl) {
+      imgEl.src = '';
+      imgEl.style.display = 'none';
+    }
+    if (placeholder) placeholder.style.display = 'block';
+    if (removeBtn) removeBtn.style.display = 'none';
+    if (downloadBtn) downloadBtn.style.display = 'none';
+  }
+}
+
+function clearSelectedImage(prefix) {
+  setModalImagePreview(prefix, '');
+  const fileInput = document.getElementById(`${prefix}-image-file`);
+  if (fileInput) fileInput.value = '';
+  const statusEl = document.getElementById(`${prefix}-image-status`);
+  if (statusEl) statusEl.textContent = 'PNG, JPG, WEBP, GIF, SVG up to 10MB';
+}
+
+function downloadCurrentInstrumentImage(prefix) {
+  const urlInput = document.getElementById(`${prefix}-image-url`);
+  if (!urlInput || !urlInput.value) return;
+  const fullUrl = urlInput.value.startsWith('http') ? urlInput.value : `${API_BASE}${urlInput.value}`;
+  const downloadUrl = `${fullUrl}/download`;
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function previewImageModal(fullUrl, downloadUrl, title) {
+  const titleEl = document.getElementById('preview-image-title');
+  const imgEl = document.getElementById('preview-image-img');
+  const dlLink = document.getElementById('preview-image-download-link');
+
+  if (titleEl) titleEl.textContent = title ? `${title} - Image` : 'Instrument Image';
+  if (imgEl) imgEl.src = fullUrl;
+  if (dlLink) dlLink.href = downloadUrl || `${fullUrl}/download`;
+
+  openModal('preview-image-modal');
+}
+
 // ── Instruments CRUD ──────────────────────────────────────────────────
 function openAddInstrumentModal() {
   const nameEl = document.getElementById('new-inst-name');
   const statusEl = document.getElementById('new-inst-status');
   if (nameEl) nameEl.value = '';
   if (statusEl) statusEl.value = 'available';
+  clearSelectedImage('new-inst');
   loadAvailableRfids('new-inst', 'HF');
   openModal('add-instrument-modal');
 }
@@ -247,6 +377,7 @@ async function submitCreateInstrument() {
   const name = document.getElementById('new-inst-name')?.value.trim();
   const status = document.getElementById('new-inst-status')?.value;
   const rfid = getSelectedRfidValue('new-inst');
+  const image_url = document.getElementById('new-inst-image-url')?.value.trim() || null;
 
   if (!name) return showToast('Instrument name is required', 'error');
 
@@ -254,7 +385,7 @@ async function submitCreateInstrument() {
     const res = await fetch(`${API_BASE}/instruments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, rfid })
+      body: JSON.stringify({ name, status, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
@@ -275,6 +406,7 @@ function openEditInstrumentModal(id) {
   document.getElementById('edit-inst-id').value = inst.id;
   document.getElementById('edit-inst-name').value = inst.name;
   document.getElementById('edit-inst-status').value = inst.status;
+  setModalImagePreview('edit-inst', inst.image_url || '');
   loadAvailableRfids('edit-inst', 'HF', inst.rfid || '');
   openModal('edit-instrument-modal');
 }
@@ -284,12 +416,13 @@ async function submitUpdateInstrument() {
   const name = document.getElementById('edit-inst-name')?.value.trim();
   const status = document.getElementById('edit-inst-status')?.value;
   const rfid = getSelectedRfidValue('edit-inst');
+  const image_url = document.getElementById('edit-inst-image-url')?.value.trim() || null;
 
   try {
     const res = await fetch(`${API_BASE}/instruments/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, status, rfid })
+      body: JSON.stringify({ name, status, rfid, image_url })
     });
     const data = await res.json();
     if (res.ok) {
@@ -752,8 +885,13 @@ function renderRetiredInstruments() {
     return `
       <tr style="${isDel ? 'opacity: 0.6;' : ''}">
         <td>
-          <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
-          ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            ${renderInstrumentThumbnail(inst)}
+            <div>
+              <div style="font-weight: 600; color: var(--text);">${escapeHtml(inst.name)}</div>
+              ${isDel ? '<span style="font-size: 10px; color: var(--red);">[DELETED]</span>' : ''}
+            </div>
+          </div>
         </td>
         <td>
           <span class="badge badge-retired">retired</span>

@@ -20,7 +20,7 @@ export class InstrumentService {
    * Create a new instrument with optional RFID assignment.
    */
   async createInstrument(data: CreateInstrumentInput) {
-    const { name, status, rfid } = data;
+    const { name, status, rfid, image_url } = data;
 
     if (rfid) {
       const rfidRecord = await prisma.rfid.findUnique({
@@ -53,7 +53,8 @@ export class InstrumentService {
       data: {
         name,
         status: status || 'available',
-        rfid: rfid || null
+        rfid: rfid || null,
+        image_url: image_url || null
       },
       include: {
         rfidRef: true
@@ -162,7 +163,7 @@ export class InstrumentService {
       );
     }
 
-    const { name, status, rfid } = data;
+    const { name, status, rfid, image_url } = data;
 
     if (rfid !== undefined && rfid !== null && rfid !== instrument.rfid) {
       const rfidRecord = await prisma.rfid.findUnique({
@@ -198,6 +199,7 @@ export class InstrumentService {
         ...(name !== undefined && { name }),
         ...(status !== undefined && { status }),
         ...(rfid !== undefined && { rfid }),
+        ...(image_url !== undefined && { image_url }),
         updatedAt: new Date()
       },
       include: {

@@ -1,0 +1,110 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Store uploads in backend/uploads directory
+const UPLOAD_DIR = path.resolve(__dirname, '../../uploads');
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+export class ImageServiceError extends Error {
+    statusCode;
+    constructor(message, statusCode = 400) {
+        super(message);
+        this.name = 'ImageServiceError';
+        this.statusCode = statusCode;
+    }
+}
+const ALLOWED_MIME_TYPES = new Map([
+    ['image/jpeg', '.jpg'],
+    ['image/jpg', '.jpg'],
+    ['image/png', '.png'],
+    ['image/webp', '.webp'],
+    ['image/gif', '.gif'],
+    ['image/svg+xml', '.svg']
+]);
+const MIME_BY_EXT = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml'
+};
+export class ImageService {
+    /**
+     * Save uploaded file stream to disk
+     */
+    async saveImageStream(fileStream, originalFilename, mimetype) {
+        const extFromMime = ALLOWED_MIME_TYPES.get(mimetype.toLowerCase());
+        const originalExt = path.extname(originalFilename).toLowerCase();
+        const ext = extFromMime || originalExt;
+        if (!ALLOWED_MIME_TYPES.has(mimetype.toLowerCase()) && !MIME_BY_EXT[originalExt]) {
+            throw new ImageServiceError(`Invalid file type '${mimetype}'. Only JPEG, PNG, WEBP, GIF, and SVG images are allowed.`, 400);
+        }
+        const uniqueId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+        const safeFilename = `inst-${Date.now()}-${uniqueId}${ext || '.png'}`;
+        const targetPath = path.join(UPLOAD_DIR, safeFilename);
+        const writeStream = fs.createWriteStream(targetPath);
+        await pipeline(fileStream, writeStream);
+        return {
+            filename: safeFilename,
+            url: `/images/${safeFilename}`,
+            mimetype: extFromMime ? mimetype : (MIME_BY_EXT[originalExt] || 'application/octet-stream')
+        };
+    }
+    /**
+     * Save buffer directly (e.g. from base64 or form)
+     */
+    async saveImageBuffer(buffer, originalFilename, mimetype) {
+        const extFromMime = ALLOWED_MIME_TYPES.get(mimetype.toLowerCase());
+        const originalExt = path.extname(originalFilename).toLowerCase();
+        const ext = extFromMime || originalExt;
+        if (!ALLOWED_MIME_TYPES.has(mimetype.toLowerCase()) && !MIME_BY_EXT[originalExt]) {
+            throw new ImageServiceError(`Invalid file type '${mimetype}'. Only JPEG, PNG, WEBP, GIF, and SVG images are allowed.`, 400);
+        }
+        const uniqueId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+        const safeFilename = `inst-${Date.now()}-${uniqueId}${ext || '.png'}`;
+        const targetPath = path.join(UPLOAD_DIR, safeFilename);
+        await fs.promises.writeFile(targetPath, buffer);
+        return {
+            filename: safeFilename,
+            url: `/images/${safeFilename}`,
+            mimetype: extFromMime ? mimetype : (MIME_BY_EXT[originalExt] || 'application/octet-stream')
+        };
+    }
+    /**
+     * Get absolute filepath and mimetype for a given filename
+     */
+    getImagePath(filename) {
+        // Sanitize filename against directory traversal
+        const safeName = path.basename(filename);
+        const filePath = path.join(UPLOAD_DIR, safeName);
+        const exists = fs.existsSync(filePath);
+        const ext = path.extname(safeName).toLowerCase();
+        const mimetype = MIME_BY_EXT[ext] || 'application/octet-stream';
+        return { filePath, exists, mimetype };
+    }
+    /**
+     * Delete an image from storage
+     */
+    async deleteImage(filename) {
+        const safeName = path.basename(filename);
+        const filePath = path.join(UPLOAD_DIR, safeName);
+        try {
+            if (fs.existsSync(filePath)) {
+                await fs.promises.unlink(filePath);
+                return true;
+            }
+        }
+        catch {
+            // Ignore cleanup error
+        }
+        return false;
+    }
+}
+export const imageService = new ImageService();

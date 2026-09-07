@@ -11,7 +11,7 @@ export const ReturnMaintenanceSchema = z.object({
     returned_at: z.coerce.date().optional(),
     notes: z.string().trim().max(1000).optional(),
     maintainer: z.string().trim().max(200).optional()
-});
+}).optional().default({});
 export const MaintenanceParamsSchema = z.object({
     id: z.string().uuid('Invalid maintenance ID format')
 });

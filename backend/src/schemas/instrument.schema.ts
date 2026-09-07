@@ -15,6 +15,7 @@ export const InstrumentResponseSchema = z.object({
   name: z.string(),
   status: InstrumentStatusEnum,
   rfid: z.string().nullable(),
+  image_url: z.string().nullable().optional(),
   createdAt: z.date().or(z.string()),
   updatedAt: z.date().or(z.string()),
   deletedAt: z.date().or(z.string()).nullable(),
@@ -35,7 +36,8 @@ export type InstrumentResponse = z.infer<typeof InstrumentResponseSchema>;
 export const CreateInstrumentSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),
   status: InstrumentStatusEnum.default('available'),
-  rfid: z.string().trim().nullable().optional()
+  rfid: z.string().trim().nullable().optional(),
+  image_url: z.string().trim().nullable().optional()
 });
 
 export type CreateInstrumentInput = z.infer<typeof CreateInstrumentSchema>;
@@ -43,7 +45,8 @@ export type CreateInstrumentInput = z.infer<typeof CreateInstrumentSchema>;
 export const UpdateInstrumentSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty').trim().optional(),
   status: InstrumentStatusEnum.optional(),
-  rfid: z.string().trim().nullable().optional()
+  rfid: z.string().trim().nullable().optional(),
+  image_url: z.string().trim().nullable().optional()
 });
 
 export type UpdateInstrumentInput = z.infer<typeof UpdateInstrumentSchema>;
