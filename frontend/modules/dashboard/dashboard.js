@@ -3,7 +3,7 @@
  */
 
 function updateDashboardStats() {
-  const totalInst = (typeof instrumentsList !== 'undefined') ? instrumentsList.filter(i => !i.deletedAt).length : 0;
+  const totalInst = (typeof instrumentsList !== 'undefined') ? instrumentsList.filter(i => !i.deletedAt && i.status !== 'retired').length : 0;
   const availInst = (typeof instrumentsList !== 'undefined') ? instrumentsList.filter(i => !i.deletedAt && i.status === 'available').length : 0;
   const maintInst = (typeof instrumentsList !== 'undefined') ? instrumentsList.filter(i => !i.deletedAt && i.status === 'maintenance').length : 0;
   const totalU = (typeof usersList !== 'undefined') ? usersList.filter(u => !u.deletedAt).length : 0;

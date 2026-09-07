@@ -67,11 +67,11 @@ async function loadInstruments() {
     if (res.ok) {
       instrumentGroupsList = data.data || [];
 
-      // Flatten units list for fast lookup across app
+      // Flatten units list for fast lookup across app (excluding retired)
       instrumentsList = [];
       instrumentGroupsList.forEach(g => {
         if (g.instruments) {
-          instrumentsList.push(...g.instruments);
+          instrumentsList.push(...g.instruments.filter(u => u.status !== 'retired'));
         }
       });
 
@@ -105,6 +105,10 @@ function toggleGroupExpand(groupId) {
     expandedGroupIds.add(groupId);
     card.classList.add('expanded');
   }
+  const toggleBtnText = document.getElementById('inst-toggle-all-text');
+  if (toggleBtnText) {
+    toggleBtnText.textContent = expandedGroupIds.size > 0 ? 'Collapse All' : 'Expand All';
+  }
 }
 
 function toggleAllGroups() {
@@ -112,6 +116,7 @@ function toggleAllGroups() {
   const toggleBtnText = document.getElementById('inst-toggle-all-text');
 
   if (expandedGroupIds.size > 0) {
+    // Collapse all
     expandedGroupIds.clear();
     allCardEls.forEach(el => el.classList.remove('expanded'));
     if (toggleBtnText) toggleBtnText.textContent = 'Expand All';
@@ -126,6 +131,11 @@ function renderInstrumentGroups(groups = instrumentGroupsList) {
   const container = document.getElementById('inst-groups-list');
   const grid = document.getElementById('inst-grid-view');
   if (!container) return;
+
+  const toggleBtnText = document.getElementById('inst-toggle-all-text');
+  if (toggleBtnText) {
+    toggleBtnText.textContent = expandedGroupIds.size > 0 ? 'Collapse All' : 'Expand All';
+  }
 
   if (!groups.length) {
     container.innerHTML = `
@@ -146,11 +156,6 @@ function renderInstrumentGroups(groups = instrumentGroupsList) {
     `;
     if (grid) grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text3); padding: 32px;">No instrument groups found.</div>`;
     return;
-  }
-
-  // Auto-expand groups on initial load so user immediately sees all units
-  if (expandedGroupIds.size === 0) {
-    groups.forEach(g => expandedGroupIds.add(g.id));
   }
 
   // Render Table / Accordion View

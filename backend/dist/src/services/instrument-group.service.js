@@ -12,13 +12,14 @@ export class InstrumentGroupService {
      * Helper to calculate status stats for a list of instruments.
      */
     calculateStats(instruments) {
-        const activeInstruments = instruments.filter((i) => i.deletedAt === null);
+        const activeInstruments = instruments.filter((i) => i.deletedAt === null && i.status !== 'retired');
+        const retiredCount = instruments.filter((i) => i.deletedAt === null && i.status === 'retired').length;
         const stats = {
             total: activeInstruments.length,
             available: 0,
             borrowed: 0,
             maintenance: 0,
-            retired: 0,
+            retired: retiredCount,
             lost: 0
         };
         for (const inst of activeInstruments) {
@@ -51,7 +52,8 @@ export class InstrumentGroupService {
         });
         return {
             ...group,
-            stats: this.calculateStats(group.instruments)
+            stats: this.calculateStats(group.instruments),
+            instruments: group.instruments.filter((u) => u.status !== 'retired')
         };
     }
     /**
@@ -95,10 +97,11 @@ export class InstrumentGroupService {
         ]);
         const formattedGroups = groups.map((g) => {
             const stats = this.calculateStats(g.instruments);
+            const activeUnits = g.instruments.filter((u) => u.status !== 'retired');
             return {
                 ...g,
                 stats,
-                instruments: includeUnits ? g.instruments : undefined
+                instruments: includeUnits ? activeUnits : undefined
             };
         });
         return {
@@ -133,7 +136,8 @@ export class InstrumentGroupService {
         }
         return {
             ...group,
-            stats: this.calculateStats(group.instruments)
+            stats: this.calculateStats(group.instruments),
+            instruments: group.instruments.filter((u) => u.status !== 'retired')
         };
     }
     /**
