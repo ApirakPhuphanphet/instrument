@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { imageService } from './image.service.js';
 export class InstrumentGroupServiceError extends Error {
     statusCode;
     constructor(message, statusCode = 400) {
@@ -154,6 +155,19 @@ export class InstrumentGroupService {
             throw new InstrumentGroupServiceError(`Cannot update deleted group '${id}'. Restore the group first.`, 400);
         }
         const { name, brand, model, description, image_url } = data;
+        if (image_url !== undefined && image_url !== group.image_url && group.image_url) {
+            const [otherInst, otherGroup] = await Promise.all([
+                prisma.instrument.findFirst({
+                    where: { image_url: group.image_url, deletedAt: null }
+                }),
+                prisma.instrumentGroup.findFirst({
+                    where: { id: { not: id }, image_url: group.image_url, deletedAt: null }
+                })
+            ]);
+            if (!otherInst && !otherGroup) {
+                await imageService.deleteImageByUrl(group.image_url);
+            }
+        }
         const updated = await prisma.instrumentGroup.update({
             where: { id },
             data: {
@@ -182,10 +196,38 @@ export class InstrumentGroupService {
      */
     async deleteGroup(id, permanent = false) {
         const group = await prisma.instrumentGroup.findUnique({
-            where: { id }
+            where: { id },
+            include: {
+                instruments: true
+            }
         });
         if (!group) {
             throw new InstrumentGroupServiceError(`Instrument group '${id}' not found.`, 404);
+        }
+        // Delete group image if not referenced elsewhere
+        if (group.image_url) {
+            const [otherInst, otherGroup] = await Promise.all([
+                prisma.instrument.findFirst({
+                    where: { image_url: group.image_url, deletedAt: null }
+                }),
+                prisma.instrumentGroup.findFirst({
+                    where: { id: { not: id }, image_url: group.image_url, deletedAt: null }
+                })
+            ]);
+            if (!otherInst && !otherGroup) {
+                await imageService.deleteImageByUrl(group.image_url);
+            }
+        }
+        // Delete images of any instruments in this group that get deleted
+        for (const inst of group.instruments) {
+            if (inst.image_url && inst.image_url !== group.image_url) {
+                const otherRef = await prisma.instrument.findFirst({
+                    where: { id: { not: inst.id }, image_url: inst.image_url, deletedAt: null }
+                });
+                if (!otherRef) {
+                    await imageService.deleteImageByUrl(inst.image_url);
+                }
+            }
         }
         if (permanent) {
             return prisma.instrumentGroup.delete({
@@ -198,7 +240,8 @@ export class InstrumentGroupService {
         return prisma.instrumentGroup.update({
             where: { id },
             data: {
-                deletedAt: new Date()
+                deletedAt: new Date(),
+                image_url: null
             }
         });
     }

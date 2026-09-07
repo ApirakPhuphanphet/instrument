@@ -106,5 +106,15 @@ export class ImageService {
         }
         return false;
     }
+    /**
+     * Delete an image by its full URL (e.g. /images/inst-123.png)
+     */
+    async deleteImageByUrl(url) {
+        if (!url)
+            return false;
+        const match = url.match(/\/images\/([^/?#]+)/);
+        const filename = match ? match[1] : path.basename(url);
+        return this.deleteImage(filename);
+    }
 }
 export const imageService = new ImageService();

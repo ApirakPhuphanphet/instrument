@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { imageService } from './image.service.js';
 export class InstrumentServiceError extends Error {
     statusCode;
     constructor(message, statusCode = 400) {
@@ -160,6 +161,19 @@ export class InstrumentService {
                 throw new InstrumentServiceError(`RFID tag '${rfid}' is already assigned to instrument '${existingInstrumentWithRfid.name}'.`, 409);
             }
         }
+        if (image_url !== undefined && image_url !== instrument.image_url && instrument.image_url) {
+            const [otherInst, otherGroup] = await Promise.all([
+                prisma.instrument.findFirst({
+                    where: { id: { not: id }, image_url: instrument.image_url, deletedAt: null }
+                }),
+                prisma.instrumentGroup.findFirst({
+                    where: { image_url: instrument.image_url, deletedAt: null }
+                })
+            ]);
+            if (!otherInst && !otherGroup) {
+                await imageService.deleteImageByUrl(instrument.image_url);
+            }
+        }
         return prisma.instrument.update({
             where: { id },
             data: {
@@ -187,6 +201,20 @@ export class InstrumentService {
         if (!instrument) {
             throw new InstrumentServiceError(`Instrument with ID '${id}' not found.`, 404);
         }
+        // Delete image file when instrument is deleted
+        if (instrument.image_url) {
+            const [otherInst, otherGroup] = await Promise.all([
+                prisma.instrument.findFirst({
+                    where: { id: { not: id }, image_url: instrument.image_url, deletedAt: null }
+                }),
+                prisma.instrumentGroup.findFirst({
+                    where: { image_url: instrument.image_url, deletedAt: null }
+                })
+            ]);
+            if (!otherInst && !otherGroup) {
+                await imageService.deleteImageByUrl(instrument.image_url);
+            }
+        }
         if (permanent) {
             return prisma.instrument.delete({
                 where: { id }
@@ -198,7 +226,8 @@ export class InstrumentService {
         return prisma.instrument.update({
             where: { id },
             data: {
-                deletedAt: new Date()
+                deletedAt: new Date(),
+                image_url: null
             },
             include: {
                 group: true,
