@@ -95,6 +95,8 @@ if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.arg
     try {
       await app.listen({ port, host: '0.0.0.0' });
       console.log(`🚀 Server is running on http://localhost:${port}`);
+      console.log(`📄 Swagger docs available at http://localhost:${port}/docs`)
+      console.log(`📄 Frontend available at http://localhost:${port}/ui/`);
       try {
         await prisma.$queryRaw`SELECT NOW()`;
         console.log('✅ Connected to PostgreSQL');
