@@ -13,10 +13,9 @@ import {
 } from 'fastify-type-provider-zod';
 
 import cors from '@fastify/cors';
-import fastifyStatic from '@fastify/static';
 import multipart from '@fastify/multipart';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
 
 import { healthRoutes } from './routes/health.js';
 import { transactionRoutes } from './routes/transaction.js';
@@ -50,12 +49,6 @@ export async function buildApp() {
     limits: {
       fileSize: 10 * 1024 * 1024 // 10MB limit
     }
-  });
-
-  await app.register(fastifyStatic, {
-    root: resolve(__dirname, '../../frontend'),
-    prefix: '/ui/',
-    decorateReply: false
   });
 
   await app.register(swagger, {
@@ -95,8 +88,7 @@ if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.arg
     try {
       await app.listen({ port, host: '0.0.0.0' });
       console.log(`🚀 Server is running on http://localhost:${port}`);
-      console.log(`📄 Swagger docs available at http://localhost:${port}/docs`)
-      console.log(`📄 Frontend available at http://localhost:${port}/ui/`);
+      console.log(`📄 Swagger docs available at http://localhost:${port}/docs`);
       try {
         await prisma.$queryRaw`SELECT NOW()`;
         console.log('✅ Connected to PostgreSQL');

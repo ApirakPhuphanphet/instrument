@@ -1,12 +1,14 @@
 # ES-Hub · Instrument & RFID Tracking System
 
 [![Fastify](https://img.shields.io/badge/Fastify-5.2+-black?style=flat&logo=fastify)](https://fastify.dev/)
+[![Vue.js](https://img.shields.io/badge/Vue.js-3.5+-4FC08D?style=flat&logo=vuedotjs)](https://vuejs.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.2+-646CFF?style=flat&logo=vite)](https://vitejs.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-6.4+-2D3748?style=flat&logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791?style=flat&logo=postgresql)](https://www.postgresql.org/)
 [![Swagger](https://img.shields.io/badge/OpenAPI-Swagger%20UI-85EA2D?style=flat&logo=swagger)](http://localhost:3000/docs)
 
-**ES-Hub** is a laboratory instrument inventory and automated tracking platform. It integrates dual-frequency RFID hardware (LF for user identification badges and HF for instrument tags), barcode identification, automated borrow/return workflows, maintenance logging, image asset management, and a responsive web dashboard.
+**ES-Hub** is a laboratory instrument inventory and automated tracking platform. It integrates dual-frequency RFID hardware (LF for user identification badges and HF for instrument tags), barcode identification, automated borrow/return workflows, maintenance logging, image asset management, and a reactive Vue.js 3 single-page dashboard.
 
 ---
 
@@ -53,8 +55,9 @@
   - Automated disk cleanup: orphaned image files are safely deleted when instruments or groups are deleted or updated.
 - **Interactive Documentation**:
   - OpenAPI specification and interactive Swagger UI accessible directly at `/docs`.
-- **Modern Responsive Web UI**:
-  - Embedded Vanilla ES-modules dashboard served directly at `/ui/`.
+- **Modern Vue 3 SPA Dashboard**:
+  - Built with **Vue 3** (Composition API, `<script setup>`) and **Vite**.
+  - Served directly at `/ui/` by Fastify or via Vite HMR dev server at `http://localhost:5173/ui/`.
   - Dark / Light mode toggle, live backend connection health monitor, quick search, and filter tabs.
 
 ---
@@ -125,15 +128,26 @@ instrument/
 │   ├── tsconfig.json
 │   └── openapi.json             # Generated OpenAPI v3 specification
 ├── frontend/
-│   ├── css/
-│   │   └── style.css            # Global theme variables, reset & shared components
-│   ├── js/
-│   │   └── app.js               # Router, global state, toast alerts & theme toggle
-│   ├── modules/
-│   │   ├── dashboard/           # Summary cards, live feed, charts
-│   │   ├── instruments/         # Groups accordion, units list, retired tab, forms
-│   │   └── users/               # User directory, tag binding, activity
-│   └── index.html               # Main single-page application entry point
+│   ├── src/
+│   │   ├── App.vue              # Main Vue application shell
+│   │   ├── main.js              # Vue entry point
+│   │   ├── assets/
+│   │   │   └── style.css        # Design tokens & styles
+│   │   ├── composables/
+│   │   │   ├── useApi.js        # API connection & helper utilities
+│   │   │   └── useToast.js      # Reactive toast notification system
+│   │   ├── components/
+│   │   │   ├── common/          # Modal, ImageUpload, RfidSelect, ToastContainer
+│   │   │   ├── instruments/     # GroupCard, GroupGridCard, Modals, Tabs
+│   │   │   └── users/           # UserModal
+│   │   └── views/
+│   │       ├── DashboardView.vue   # Metrics & shortcuts view
+│   │       ├── InstrumentsView.vue # Groups accordion, units & sub-tabs
+│   │       └── UsersView.vue       # Users directory & RFID management
+│   ├── dist/                    # Compiled production build (served by backend)
+│   ├── package.json             # Frontend dependencies (Vue 3, Vite)
+│   ├── vite.config.js           # Vite config with /ui/ base & backend proxy
+│   └── index.html               # Vite HTML entry point
 ├── .gitignore
 └── README.md
 ```
@@ -309,42 +323,62 @@ PORT=3000
 
 ### Running the Application
 
-- **Development Mode (with auto-reload):**
-  ```bash
-  npm run dev
-  ```
-  The server starts at `http://localhost:3000`.
+Frontend and Backend run as separate services. You can start them individually in separate terminals or use the root convenience scripts:
 
-- **Production Build:**
-  ```bash
-  npm run build
-  npm start
-  ```
+#### Option A: Using Root Workspace Commands
+```bash
+# Terminal 1: Backend API (port 3000)
+npm run backend:dev
 
-- **Export OpenAPI Specification:**
-  ```bash
-  npm run openapi
-  ```
-  Exports the latest specification to `backend/openapi.json`.
+# Terminal 2: Vue 3 Frontend (port 5173)
+npm run frontend:dev
+```
+
+#### Option B: Navigating into Each Directory
+```bash
+# Terminal 1: Backend
+cd backend
+npm run dev
+
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+```
+
+- **Backend API & Swagger Docs:** `http://localhost:3000` (`/docs`)
+- **Frontend Dashboard:** `http://localhost:5173/`
+
+#### Building for Production:
+```bash
+# Build Frontend
+npm run frontend:build
+# Or inside frontend/: npm run build
+
+# Build Backend
+npm run backend:build
+# Or inside backend/: npm run build
+```
 
 ---
 
 ## 🖥 Frontend Dashboard
 
-The web dashboard is served directly by the backend at:
+The Vue 3 web dashboard runs on its dedicated Vite dev server at:
 ```
-http://localhost:3000/ui/
+http://localhost:5173/
 ```
 
 ### Key UI Features:
+- **Vue 3 Reactive Architecture**: Built using Vue 3 Composition API (`<script setup>`) with reactive state and instant component updates.
 - **Dashboard Overview**: Active borrow metrics, instrument status counts, and latest activity feed.
 - **Instrument Management**:
   - Accordion view of instrument groups showing model, brand, image, and availability count.
   - Expand groups to view individual units, assign RFID/barcodes, and view unit status.
   - **Retired Tab**: Separate view to audit decommissioned instruments without cluttering active inventory.
-  - Image upload directly from the browser with automatic thumbnail previews.
+  - Image upload directly from the browser with automatic thumbnail previews and download options.
 - **User Directory**: View registered staff/students, assign LF RFID cards, and track borrowing history.
-- **Transaction Logs**: Searchable and filterable history of check-outs and check-ins.
+- **Transaction Logs**: Searchable and filterable history of check-outs and check-ins with pagination.
+- **Maintenance Records**: Dispatch instruments for maintenance, record notes, and quick "Bring Back" return workflow.
 - **Theme Switcher**: One-click toggle between Dark and Light color themes.
 
 ---
