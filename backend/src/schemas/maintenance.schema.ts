@@ -59,7 +59,8 @@ export const MaintenanceItemSchema = z.object({
       name: z.string(),
       status: z.string(),
       rfid: z.string().nullable(),
-      image_url: z.string().nullable().optional()
+      image_url: z.string().nullable().optional(),
+      next_maintain_date: z.date().or(z.string()).nullable().optional()
     })
     .optional()
 });

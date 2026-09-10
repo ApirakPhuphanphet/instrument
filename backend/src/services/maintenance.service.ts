@@ -73,7 +73,7 @@ export class MaintenanceService {
         },
         include: {
           instrument: {
-            select: { id: true, name: true, status: true, rfid: true, image_url: true }
+            select: { id: true, name: true, status: true, rfid: true, image_url: true, next_maintain_date: true }
           }
         }
       }),
@@ -135,7 +135,7 @@ export class MaintenanceService {
         },
         include: {
           instrument: {
-            select: { id: true, name: true, status: true, rfid: true, image_url: true }
+            select: { id: true, name: true, status: true, rfid: true, image_url: true, next_maintain_date: true }
           }
         }
       })
