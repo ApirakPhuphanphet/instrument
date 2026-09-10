@@ -5,17 +5,21 @@ export type MaintenanceStatus = z.infer<typeof MaintenanceStatusEnum>;
 
 export const SendMaintenanceSchema = z.object({
   instrument_id: z.string().uuid('Invalid instrument ID format'),
-  reason: z.string().trim().max(500).optional(),
-  notes: z.string().trim().max(1000).optional(),
-  maintainer: z.string().trim().max(200).optional(),
-  sent_at: z.coerce.date().optional()
+  reason: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  maintainer: z.string().trim().max(200).nullable().optional(),
+  sent_at: z.coerce.date().nullable().optional()
 });
 export type SendMaintenanceInput = z.infer<typeof SendMaintenanceSchema>;
 
 export const ReturnMaintenanceSchema = z.object({
-  returned_at: z.coerce.date().optional(),
-  notes: z.string().trim().max(1000).optional(),
-  maintainer: z.string().trim().max(200).optional()
+  returned_at: z.coerce.date().nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+  maintainer: z.string().trim().max(200).nullable().optional(),
+  next_maintain_date: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.coerce.date().nullable().optional()
+  )
 }).optional().default({});
 export type ReturnMaintenanceInput = z.infer<typeof ReturnMaintenanceSchema>;
 

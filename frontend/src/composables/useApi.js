@@ -62,6 +62,12 @@ export function useApi() {
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  function formatDateOnly(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? '-' : d.toISOString().split('T')[0];
+  }
+
   return {
     apiBase,
     apiStatus,
@@ -71,6 +77,7 @@ export function useApi() {
     imagePreview,
     openImagePreview,
     closeImagePreview,
-    formatDate
+    formatDate,
+    formatDateOnly
   };
 }

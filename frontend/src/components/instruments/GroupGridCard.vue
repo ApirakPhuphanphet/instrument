@@ -62,6 +62,23 @@
         </div>
       </div>
 
+      <!-- Overdue Maintenance Warning Banner -->
+      <div
+        v-if="stats.overdue_maintenance > 0"
+        style="margin-top: 10px; padding: 6px 10px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: space-between;"
+      >
+        <span style="font-size: 11px; font-weight: 600; color: #ef4444; display: flex; align-items: center; gap: 4px;">
+          ⚠️ {{ stats.overdue_maintenance }} unit{{ stats.overdue_maintenance === 1 ? '' : 's' }} overdue
+        </span>
+        <button
+          class="btn btn-sm"
+          style="padding: 2px 6px; font-size: 10px; background: rgba(239,68,68,0.2); color: #ef4444; border: none;"
+          @click="emit('switch-to-table-and-expand', group.id)"
+        >
+          View
+        </button>
+      </div>
+
       <div style="font-size: 11.5px; color: var(--text3); margin-top: 6px;">
         {{ activeUnits.length }} registered unit{{ activeUnits.length === 1 ? '' : 's' }}
       </div>
@@ -97,7 +114,7 @@ const emit = defineEmits(['switch-to-table-and-expand', 'add-unit', 'edit-group'
 const { resolveImageUrl, openImagePreview } = useApi();
 
 const stats = computed(() => {
-  return props.group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0, retired: 0 };
+  return props.group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0, retired: 0, overdue_maintenance: 0 };
 });
 
 const activeUnits = computed(() => {

@@ -1,5 +1,30 @@
 <template>
   <div>
+    <!-- Overdue Warning Alert Banner -->
+    <div
+      v-if="stats.overdue > 0"
+      style="margin-bottom: 18px; padding: 12px 18px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;"
+    >
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 24px;">⚠️</span>
+        <div>
+          <div style="font-weight: 700; color: #ef4444; font-size: 13.5px;">
+            Maintenance Overdue Alert
+          </div>
+          <div style="font-size: 12px; color: var(--text2); margin-top: 2px;">
+            {{ stats.overdue }} instrument unit{{ stats.overdue === 1 ? ' has' : 's have' }} reached or passed their scheduled maintenance date and require service.
+          </div>
+        </div>
+      </div>
+      <button
+        class="btn"
+        style="background: #ef4444; color: #ffffff; border: none; font-weight: 600; font-size: 12px;"
+        @click="emit('navigate-overdue')"
+      >
+        View Overdue Units
+      </button>
+    </div>
+
     <!-- Stat Cards -->
     <div class="stat-grid">
       <div class="stat-card">
@@ -200,11 +225,11 @@ import { useApi } from '@/composables/useApi';
 const props = defineProps({
   stats: {
     type: Object,
-    default: () => ({ total: 0, available: 0, maintenance: 0, users: 0 })
+    default: () => ({ total: 0, available: 0, maintenance: 0, users: 0, overdue: 0 })
   }
 });
 
-const emit = defineEmits(['navigate', 'open-add-instrument', 'open-add-user']);
+const emit = defineEmits(['navigate', 'open-add-instrument', 'open-add-user', 'navigate-overdue']);
 
 const { apiBase } = useApi();
 </script>

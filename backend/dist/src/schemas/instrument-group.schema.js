@@ -6,7 +6,8 @@ export const InstrumentGroupStatsSchema = z.object({
     borrowed: z.number().int().default(0),
     maintenance: z.number().int().default(0),
     retired: z.number().int().default(0),
-    lost: z.number().int().default(0)
+    lost: z.number().int().default(0),
+    overdue_maintenance: z.number().int().default(0)
 });
 export const InstrumentGroupResponseSchema = z.object({
     id: z.string().uuid(),

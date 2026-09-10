@@ -52,15 +52,26 @@
 
         <div>
           <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
-            Barcode / Asset Number
+            Next Maintenance Date
           </label>
           <input
-            v-model="form.barcode"
-            placeholder="e.g. LAB-00124"
-            class="mono"
+            v-model="form.next_maintain_date"
+            type="date"
             style="width: 100%;"
           />
         </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+          Barcode / Asset Number
+        </label>
+        <input
+          v-model="form.barcode"
+          placeholder="e.g. LAB-00124"
+          class="mono"
+          style="width: 100%;"
+        />
       </div>
 
       <RfidSelect
@@ -113,7 +124,8 @@ const form = ref({
   status: 'available',
   barcode: '',
   rfid: '',
-  image_url: ''
+  image_url: '',
+  next_maintain_date: ''
 });
 
 watch(() => props.modelValue, (isOpen) => {
@@ -127,7 +139,10 @@ watch(() => props.modelValue, (isOpen) => {
         status: props.unitData.status || 'available',
         barcode: props.unitData.barcode || '',
         rfid: props.unitData.rfid || '',
-        image_url: props.unitData.image_url || ''
+        image_url: props.unitData.image_url || '',
+        next_maintain_date: props.unitData.next_maintain_date
+          ? props.unitData.next_maintain_date.split('T')[0]
+          : ''
       };
     } else {
       isEdit.value = false;
@@ -145,7 +160,8 @@ watch(() => props.modelValue, (isOpen) => {
         status: 'available',
         barcode: '',
         rfid: '',
-        image_url: ''
+        image_url: '',
+        next_maintain_date: ''
       };
     }
   }
@@ -172,7 +188,8 @@ async function save() {
     status: form.value.status,
     barcode: form.value.barcode.trim() || null,
     rfid: form.value.rfid.trim() || null,
-    image_url: form.value.image_url.trim() || null
+    image_url: form.value.image_url.trim() || null,
+    next_maintain_date: form.value.next_maintain_date || null
   };
 
   try {

@@ -7,7 +7,8 @@ export const InstrumentGroupStatsSchema = z.object({
   borrowed: z.number().int().default(0),
   maintenance: z.number().int().default(0),
   retired: z.number().int().default(0),
-  lost: z.number().int().default(0)
+  lost: z.number().int().default(0),
+  overdue_maintenance: z.number().int().default(0)
 });
 
 export type InstrumentGroupStats = z.infer<typeof InstrumentGroupStatsSchema>;

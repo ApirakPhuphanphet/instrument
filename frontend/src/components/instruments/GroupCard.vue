@@ -74,7 +74,14 @@
               0 / {{ stats.total }} Available
             </span>
           </div>
-          <div style="font-size: 11px; color: var(--text3); margin-top: 3px; display: flex; gap: 8px; justify-content: flex-end;">
+          <div style="font-size: 11px; color: var(--text3); margin-top: 3px; display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+            <span
+              v-if="stats.overdue_maintenance > 0"
+              class="badge"
+              style="background: rgba(239,68,68,0.18); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); font-weight: 700; font-size: 11px;"
+            >
+              ⚠️ {{ stats.overdue_maintenance }} overdue
+            </span>
             <span v-if="stats.borrowed > 0" style="color: var(--accent); font-weight: 500;">
               {{ stats.borrowed }} borrowed
             </span>
@@ -140,6 +147,7 @@
           <tr>
             <th>Unit Identifier / Name</th>
             <th>Status</th>
+            <th>Next Maintenance</th>
             <th>Barcode</th>
             <th>RFID Tag (HF)</th>
             <th>UUID</th>
@@ -149,14 +157,14 @@
         </thead>
         <tbody>
           <tr v-if="activeUnits.length === 0">
-            <td colspan="7" style="text-align: center; color: var(--text3); padding: 20px;">
+            <td colspan="8" style="text-align: center; color: var(--text3); padding: 20px;">
               No active units registered in this group yet. Click <strong>+ Add Unit</strong> to register one.
             </td>
           </tr>
           <tr
             v-for="unit in activeUnits"
             :key="unit.id"
-            :style="unit.deletedAt ? 'opacity: 0.6;' : ''"
+            :style="unit.is_maintenance_overdue ? 'background: rgba(239, 68, 68, 0.06);' : (unit.deletedAt ? 'opacity: 0.6;' : '')"
           >
             <td>
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -189,7 +197,28 @@
               </div>
             </td>
             <td>
-              <span class="badge" :class="`badge-${unit.status}`">{{ unit.status }}</span>
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <span class="badge" :class="`badge-${unit.status}`">{{ unit.status }}</span>
+                <span
+                  v-if="unit.is_maintenance_overdue"
+                  class="badge"
+                  style="background: rgba(239,68,68,0.18); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); font-size: 10px; font-weight: 700; white-space: nowrap;"
+                >
+                  ⚠️ Overdue
+                </span>
+              </div>
+            </td>
+            <td>
+              <div v-if="unit.next_maintain_date" style="display: flex; align-items: center; gap: 4px;">
+                <span
+                  class="mono"
+                  :style="unit.is_maintenance_overdue ? 'color: #ef4444; font-weight: 700;' : 'color: var(--text2);'"
+                  style="font-size: 11.5px;"
+                >
+                  {{ formatDateOnly(unit.next_maintain_date) }}
+                </span>
+              </div>
+              <span v-else style="color: var(--text3); font-size: 11px;">-</span>
             </td>
             <td>
               <span
@@ -271,10 +300,10 @@ const emit = defineEmits([
   'quick-return'
 ]);
 
-const { resolveImageUrl, openImagePreview, formatDate } = useApi();
+const { resolveImageUrl, openImagePreview, formatDate, formatDateOnly } = useApi();
 
 const stats = computed(() => {
-  return props.group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0, retired: 0 };
+  return props.group.stats || { total: 0, available: 0, borrowed: 0, maintenance: 0, retired: 0, overdue_maintenance: 0 };
 });
 
 const activeUnits = computed(() => {

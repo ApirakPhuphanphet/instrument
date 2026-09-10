@@ -10,18 +10,33 @@ export class InstrumentGroupServiceError extends Error {
 }
 export class InstrumentGroupService {
     /**
+     * Helper to append is_maintenance_overdue to units.
+     */
+    formatUnit(unit) {
+        return {
+            ...unit,
+            is_maintenance_overdue: Boolean(unit.next_maintain_date &&
+                new Date(unit.next_maintain_date) < new Date() &&
+                unit.status !== 'maintenance' &&
+                unit.status !== 'retired' &&
+                !unit.deletedAt)
+        };
+    }
+    /**
      * Helper to calculate status stats for a list of instruments.
      */
     calculateStats(instruments) {
         const activeInstruments = instruments.filter((i) => i.deletedAt === null && i.status !== 'retired');
         const retiredCount = instruments.filter((i) => i.deletedAt === null && i.status === 'retired').length;
+        const overdueCount = activeInstruments.filter((i) => Boolean(i.next_maintain_date && new Date(i.next_maintain_date) < new Date() && i.status !== 'maintenance')).length;
         const stats = {
             total: activeInstruments.length,
             available: 0,
             borrowed: 0,
             maintenance: 0,
             retired: retiredCount,
-            lost: 0
+            lost: 0,
+            overdue_maintenance: overdueCount
         };
         for (const inst of activeInstruments) {
             if (inst.status in stats) {
@@ -54,7 +69,7 @@ export class InstrumentGroupService {
         return {
             ...group,
             stats: this.calculateStats(group.instruments),
-            instruments: group.instruments.filter((u) => u.status !== 'retired')
+            instruments: group.instruments.filter((u) => u.status !== 'retired').map((u) => this.formatUnit(u))
         };
     }
     /**
@@ -98,7 +113,9 @@ export class InstrumentGroupService {
         ]);
         const formattedGroups = groups.map((g) => {
             const stats = this.calculateStats(g.instruments);
-            const activeUnits = g.instruments.filter((u) => u.status !== 'retired');
+            const activeUnits = g.instruments
+                .filter((u) => u.status !== 'retired')
+                .map((u) => this.formatUnit(u));
             return {
                 ...g,
                 stats,
@@ -138,7 +155,9 @@ export class InstrumentGroupService {
         return {
             ...group,
             stats: this.calculateStats(group.instruments),
-            instruments: group.instruments.filter((u) => u.status !== 'retired')
+            instruments: group.instruments
+                .filter((u) => u.status !== 'retired')
+                .map((u) => this.formatUnit(u))
         };
     }
     /**
@@ -188,7 +207,10 @@ export class InstrumentGroupService {
         });
         return {
             ...updated,
-            stats: this.calculateStats(updated.instruments)
+            stats: this.calculateStats(updated.instruments),
+            instruments: updated.instruments
+                .filter((u) => u.status !== 'retired')
+                .map((u) => this.formatUnit(u))
         };
     }
     /**

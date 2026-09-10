@@ -53,12 +53,37 @@
 
     <!-- TAB 1: ALL INSTRUMENTS LIST -->
     <div v-show="currentTab === 'list'">
+      <!-- Overdue Maintenance Alert Banner -->
+      <div
+        v-if="totalOverdueCount > 0"
+        style="margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;"
+      >
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">⚠️</span>
+          <div>
+            <span style="font-weight: 700; color: #ef4444; font-size: 13px;">Maintenance Overdue Warning:</span>
+            <span style="color: var(--text2); font-size: 12.5px; margin-left: 6px;">
+              {{ totalOverdueCount }} physical unit{{ totalOverdueCount === 1 ? ' has' : 's have' }} passed their scheduled maintenance date without being sent to maintenance.
+            </span>
+          </div>
+        </div>
+        <button
+          class="btn btn-sm"
+          :style="filterStatus === 'overdue' ? 'background: #ef4444; color: #fff; border-color: #dc2626;' : 'background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.4);'"
+          style="font-weight: 600;"
+          @click="filterStatus = filterStatus === 'overdue' ? '' : 'overdue'"
+        >
+          {{ filterStatus === 'overdue' ? 'Show All Groups' : 'Filter Overdue Groups' }}
+        </button>
+      </div>
+
       <!-- Toolbar -->
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <!-- Status filter -->
-          <select v-model="filterStatus" style="font-size: 12px;" @change="loadGroups">
+          <select v-model="filterStatus" style="font-size: 12px;">
             <option value="">All Groups</option>
+            <option value="overdue">⚠️ Has Overdue Maintenance</option>
             <option value="available">Has Available Units</option>
             <option value="borrowed">Has Borrowed Units</option>
             <option value="maintenance">Has Maintenance Units</option>
@@ -322,8 +347,15 @@ function switchTab(tab) {
   }
 }
 
+const totalOverdueCount = computed(() => {
+  return groupsList.value.reduce((acc, g) => acc + (g.stats?.overdue_maintenance || 0), 0);
+});
+
 const filteredGroups = computed(() => {
   if (!filterStatus.value) return groupsList.value;
+  if (filterStatus.value === 'overdue') {
+    return groupsList.value.filter(g => (g.stats?.overdue_maintenance || 0) > 0);
+  }
   if (filterStatus.value === 'available') {
     return groupsList.value.filter(g => (g.stats?.available || 0) > 0);
   }
@@ -357,6 +389,10 @@ function switchToTableAndExpand(groupId) {
   expandedGroupIds.value.add(groupId);
 }
 
+function setFilterStatus(status) {
+  filterStatus.value = status;
+}
+
 async function loadGroups() {
   isLoading.value = true;
   const params = new URLSearchParams({ limit: '100', includeUnits: 'true' });
@@ -373,15 +409,17 @@ async function loadGroups() {
       let total = 0;
       let available = 0;
       let maintenance = 0;
+      let overdue = 0;
 
       groupsList.value.forEach(g => {
         const units = (g.instruments || []).filter(u => !u.deletedAt && u.status !== 'retired');
         total += units.length;
         available += units.filter(u => u.status === 'available').length;
         maintenance += units.filter(u => u.status === 'maintenance').length;
+        overdue += units.filter(u => u.is_maintenance_overdue).length;
       });
 
-      emit('stats-updated', { total, available, maintenance });
+      emit('stats-updated', { total, available, maintenance, overdue });
     } else {
       showToast(data.message || 'Failed to load instrument groups', 'error');
     }
@@ -518,6 +556,7 @@ defineExpose({
   loadGroups,
   switchTab,
   openCreateUnit,
-  setSearch
+  setSearch,
+  setFilterStatus
 });
 </script>

@@ -92,7 +92,7 @@ export class MaintenanceService {
    * and restores instrument status to 'available'.
    */
   async returnFromMaintenance(id: string, data: ReturnMaintenanceInput = {}) {
-    const { returned_at, notes, maintainer } = data || {};
+    const { returned_at, notes, maintainer, next_maintain_date } = data || {};
 
     const maintenance = await prisma.maintenance.findFirst({
       where: { id, deletedAt: null },
@@ -119,7 +119,10 @@ export class MaintenanceService {
     const [, record] = await prisma.$transaction([
       prisma.instrument.update({
         where: { id: maintenance.instrument_id },
-        data: { status: 'available' }
+        data: {
+          status: 'available',
+          ...(next_maintain_date !== undefined && { next_maintain_date })
+        }
       }),
       prisma.maintenance.update({
         where: { id },

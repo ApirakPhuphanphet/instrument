@@ -34,6 +34,17 @@
           style="width: 100%; resize: vertical;"
         ></textarea>
       </div>
+
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+          Next Scheduled Maintenance Date (Optional)
+        </label>
+        <input
+          v-model="nextMaintainDate"
+          type="date"
+          style="width: 100%;"
+        />
+      </div>
     </div>
 
     <template #footer>
@@ -68,11 +79,13 @@ const { showToast } = useToast();
 const isSaving = ref(false);
 const maintainer = ref('');
 const notes = ref('');
+const nextMaintainDate = ref('');
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
     maintainer.value = '';
     notes.value = '';
+    nextMaintainDate.value = '';
   }
 });
 
@@ -83,6 +96,7 @@ async function submit() {
   const payload = {};
   if (maintainer.value.trim()) payload.maintainer = maintainer.value.trim();
   if (notes.value.trim()) payload.notes = notes.value.trim();
+  if (nextMaintainDate.value) payload.next_maintain_date = nextMaintainDate.value;
 
   try {
     const res = await fetch(`${apiBase.value}/maintenance/${props.maintenanceId}/return`, {

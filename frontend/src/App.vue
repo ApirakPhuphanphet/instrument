@@ -108,6 +108,7 @@
           @navigate="onDashboardNavigate"
           @open-add-instrument="openAddInstrument"
           @open-add-user="openAddUser"
+          @navigate-overdue="onNavigateOverdue"
         />
 
         <InstrumentsView
@@ -158,7 +159,8 @@ const dashboardStats = ref({
   total: 0,
   available: 0,
   maintenance: 0,
-  users: 0
+  users: 0,
+  overdue: 0
 });
 
 const pageTitle = computed(() => {
@@ -198,6 +200,14 @@ function onDashboardNavigate(page, subTab) {
   }
 }
 
+function onNavigateOverdue() {
+  currentPage.value = 'instruments';
+  if (instrumentsViewRef.value) {
+    instrumentsViewRef.value.switchTab('list');
+    instrumentsViewRef.value.setFilterStatus('overdue');
+  }
+}
+
 function openAddInstrument() {
   currentPage.value = 'instruments';
   if (instrumentsViewRef.value) {
@@ -230,10 +240,11 @@ function toggleTheme() {
   localStorage.setItem('es_hub_theme', next);
 }
 
-function onInstrumentStatsUpdated({ total, available, maintenance }) {
+function onInstrumentStatsUpdated({ total, available, maintenance, overdue }) {
   dashboardStats.value.total = total;
   dashboardStats.value.available = available;
   dashboardStats.value.maintenance = maintenance;
+  dashboardStats.value.overdue = overdue || 0;
 }
 
 function onUsersCountUpdated(count) {

@@ -15,12 +15,12 @@
 
       <div>
         <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
-          Reason / Issue Description <span style="color: var(--red);">*</span>
+          Reason / Issue Description (Optional)
         </label>
         <textarea
           v-model="reason"
           rows="3"
-          placeholder="e.g. Periodic calibration, broken probe socket, display flickering..."
+          placeholder="e.g. Periodic calibration, broken probe socket, display flickering (optional)..."
           style="width: 100%; resize: vertical;"
         ></textarea>
       </div>
@@ -89,7 +89,6 @@ watch(() => props.modelValue, (isOpen) => {
 
 async function submit() {
   if (!props.instrument?.id) return showToast('No instrument selected', 'error');
-  if (!reason.value.trim()) return showToast('Please provide a reason or issue description', 'error');
 
   isSaving.value = true;
   try {
@@ -98,7 +97,7 @@ async function submit() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         instrument_id: props.instrument.id,
-        reason: reason.value.trim(),
+        reason: reason.value.trim() || null,
         maintainer: maintainer.value.trim() || null,
         notes: notes.value.trim() || null
       })
