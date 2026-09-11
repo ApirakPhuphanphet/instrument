@@ -45,7 +45,7 @@
           <thead>
             <tr>
               <th>User</th>
-              <th>Assigned RFID (LF 125kHz)</th>
+              <th>Assigned RFID Tag</th>
               <th>UUID</th>
               <th>Status</th>
               <th>Created</th>

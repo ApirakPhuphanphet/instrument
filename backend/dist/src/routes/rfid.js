@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { RfidBodySchema, LoadQuerySchema, UnassignedRfidQuerySchema, CheckRfidBodySchema, CheckRfidQuerySchema, StaffCheckResponseSchema, InstrumentCheckResponseSchema, LoadResponseSchema } from '../schemas/rfid.schema.js';
+import { RfidBodySchema, LoadQuerySchema, UnassignedRfidQuerySchema, CheckRfidBodySchema, CheckRfidQuerySchema, StaffCheckResponseSchema, InstrumentCheckResponseSchema, LoadResponseSchema, ListRfidsQuerySchema, CreateRfidSchema, DeleteRfidQuerySchema, ListRfidsResponseSchema } from '../schemas/rfid.schema.js';
 export const rfidRoutes = async (fastify) => {
     // Helper logic for inserting RFID
     const handleInsertRfid = async (type, body, reply) => {
@@ -698,5 +698,267 @@ export const rfidRoutes = async (fastify) => {
             fastify.log.error(error);
             return reply.status(500).send({ message: 'Internal server error' });
         }
+    });
+    // GET /rfids - List RFIDs with connection to user or instrument, search, filters, pagination, and stats
+    fastify.get('/rfids', {
+        schema: {
+            tags: ['RFID'],
+            summary: 'List RFIDs with user/instrument connection details, search, and statistics',
+            querystring: ListRfidsQuerySchema,
+            response: {
+                200: ListRfidsResponseSchema,
+                500: z.object({ message: z.string() })
+            }
+        }
+    }, async (request, reply) => {
+        try {
+            const { search, type, status, page, limit, includeDeleted } = request.query;
+            const skip = (page - 1) * limit;
+            const take = limit;
+            const where = {};
+            if (!includeDeleted) {
+                where.deletedAt = null;
+            }
+            if (type) {
+                where.type = type;
+            }
+            if (status === 'assigned') {
+                where.OR = [
+                    { users: { some: { deletedAt: null } } },
+                    { instruments: { some: { deletedAt: null } } }
+                ];
+            }
+            else if (status === 'unassigned') {
+                where.AND = [
+                    { users: { none: { deletedAt: null } } },
+                    { instruments: { none: { deletedAt: null } } }
+                ];
+            }
+            else if (status === 'staff') {
+                where.users = { some: { deletedAt: null } };
+            }
+            else if (status === 'instrument') {
+                where.instruments = { some: { deletedAt: null } };
+            }
+            if (search) {
+                const searchConditions = [
+                    { id: { contains: search, mode: 'insensitive' } },
+                    { users: { some: { name: { contains: search, mode: 'insensitive' }, deletedAt: null } } },
+                    { instruments: { some: { name: { contains: search, mode: 'insensitive' }, deletedAt: null } } }
+                ];
+                if (where.OR) {
+                    where.AND = [...(where.AND || []), { OR: searchConditions }];
+                }
+                else {
+                    where.OR = searchConditions;
+                }
+            }
+            const [records, total, lfCount, hfCount, staffAssignedCount, instrumentAssignedCount, totalActive] = await Promise.all([
+                prisma.rfid.findMany({
+                    where,
+                    orderBy: { updatedAt: 'desc' },
+                    skip,
+                    take,
+                    include: {
+                        users: {
+                            where: { deletedAt: null },
+                            select: { id: true, name: true }
+                        },
+                        instruments: {
+                            where: { deletedAt: null },
+                            select: {
+                                id: true,
+                                name: true,
+                                status: true,
+                                barcode: true,
+                                group: {
+                                    select: { id: true, name: true, brand: true, model: true }
+                                }
+                            }
+                        }
+                    }
+                }),
+                prisma.rfid.count({ where }),
+                prisma.rfid.count({ where: { deletedAt: null, type: 'LF' } }),
+                prisma.rfid.count({ where: { deletedAt: null, type: 'HF' } }),
+                prisma.rfid.count({ where: { deletedAt: null, users: { some: { deletedAt: null } } } }),
+                prisma.rfid.count({ where: { deletedAt: null, instruments: { some: { deletedAt: null } } } }),
+                prisma.rfid.count({ where: { deletedAt: null } })
+            ]);
+            const assignedCount = await prisma.rfid.count({
+                where: {
+                    deletedAt: null,
+                    OR: [
+                        { users: { some: { deletedAt: null } } },
+                        { instruments: { some: { deletedAt: null } } }
+                    ]
+                }
+            });
+            const unassignedCount = Math.max(0, totalActive - assignedCount);
+            const data = records.map((r) => {
+                const user = r.users[0] || null;
+                const instrument = r.instruments[0] || null;
+                let assignedType = 'unassigned';
+                if (user)
+                    assignedType = 'staff';
+                else if (instrument)
+                    assignedType = 'instrument';
+                return {
+                    id: r.id,
+                    type: r.type,
+                    createdAt: r.createdAt,
+                    updatedAt: r.updatedAt,
+                    deletedAt: r.deletedAt,
+                    assignedType,
+                    user,
+                    instrument
+                };
+            });
+            return reply.status(200).send({
+                data,
+                pagination: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit) || 1
+                },
+                stats: {
+                    total: totalActive,
+                    lfCount,
+                    hfCount,
+                    assignedCount,
+                    unassignedCount,
+                    staffAssignedCount,
+                    instrumentAssignedCount
+                }
+            });
+        }
+        catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    });
+    // POST /rfids - Register new or update existing RFID tag
+    fastify.post('/rfids', {
+        schema: {
+            tags: ['RFID'],
+            summary: 'Register or upsert RFID tag with explicit type (LF or HF)',
+            body: CreateRfidSchema,
+            response: {
+                200: z.object({
+                    message: z.string(),
+                    data: z.object({
+                        id: z.string(),
+                        type: z.enum(['LF', 'HF']),
+                        createdAt: z.date().or(z.string()),
+                        updatedAt: z.date().or(z.string())
+                    })
+                }),
+                400: z.object({ message: z.string() }),
+                500: z.object({ message: z.string() })
+            }
+        }
+    }, async (request, reply) => {
+        try {
+            const { id, type } = request.body;
+            const result = await prisma.rfid.upsert({
+                where: { id },
+                update: {
+                    type,
+                    updatedAt: new Date(),
+                    deletedAt: null
+                },
+                create: {
+                    id,
+                    type
+                }
+            });
+            return reply.status(200).send({
+                message: 'RFID registered successfully',
+                data: result
+            });
+        }
+        catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    });
+    // Helper logic for deleting RFID
+    const handleDeleteRfid = async (id, query, reply) => {
+        try {
+            const rfid = await prisma.rfid.findUnique({
+                where: { id },
+                include: {
+                    users: { where: { deletedAt: null } },
+                    instruments: { where: { deletedAt: null } }
+                }
+            });
+            if (!rfid) {
+                return reply.status(404).send({ message: `RFID tag '${id}' not found.` });
+            }
+            const { permanent, unlink } = query;
+            if (permanent) {
+                await prisma.user.updateMany({ where: { rfid: id }, data: { rfid: null } });
+                await prisma.instrument.updateMany({ where: { rfid: id }, data: { rfid: null } });
+                await prisma.rfid.delete({ where: { id } });
+                return reply.status(200).send({
+                    message: `RFID tag '${id}' permanently deleted.`
+                });
+            }
+            if (unlink) {
+                await prisma.user.updateMany({ where: { rfid: id }, data: { rfid: null } });
+                await prisma.instrument.updateMany({ where: { rfid: id }, data: { rfid: null } });
+            }
+            await prisma.rfid.update({
+                where: { id },
+                data: {
+                    deletedAt: new Date(),
+                    updatedAt: new Date()
+                }
+            });
+            return reply.status(200).send({
+                message: `RFID tag '${id}' deleted successfully.`
+            });
+        }
+        catch (error) {
+            fastify.log.error(error);
+            return reply.status(500).send({ message: 'Internal server error' });
+        }
+    };
+    // DELETE /rfids/:id - Delete RFID tag
+    fastify.delete('/rfids/:id', {
+        schema: {
+            tags: ['RFID'],
+            summary: 'Delete or unlink RFID tag',
+            params: z.object({ id: z.string() }),
+            querystring: DeleteRfidQuerySchema,
+            response: {
+                200: z.object({ message: z.string() }),
+                404: z.object({ message: z.string() }),
+                500: z.object({ message: z.string() })
+            }
+        }
+    }, async (request, reply) => {
+        const { id } = request.params;
+        const query = request.query;
+        return handleDeleteRfid(id, query, reply);
+    });
+    // DELETE /rfid/:id - Alias for /rfids/:id
+    fastify.delete('/rfid/:id', {
+        schema: {
+            tags: ['RFID'],
+            summary: 'Delete or unlink RFID tag (alias)',
+            params: z.object({ id: z.string() }),
+            querystring: DeleteRfidQuerySchema,
+            response: {
+                200: z.object({ message: z.string() }),
+                404: z.object({ message: z.string() }),
+                500: z.object({ message: z.string() })
+            }
+        }
+    }, async (request, reply) => {
+        const { id } = request.params;
+        const query = request.query;
+        return handleDeleteRfid(id, query, reply);
     });
 };

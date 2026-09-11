@@ -157,7 +157,21 @@
             </svg>
             <div style="text-align: left;">
               <div style="font-weight: 600;">User Management</div>
-              <div style="font-size: 11px; color: var(--text3);">Manage authorized personnel and LF RFID cards</div>
+              <div style="font-size: 11px; color: var(--text3);">Manage authorized personnel and assigned RFID badges</div>
+            </div>
+          </button>
+
+          <button
+            class="btn"
+            style="justify-content: flex-start; padding: 10px 14px;"
+            @click="emit('navigate', 'rfids')"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            <div style="text-align: left;">
+              <div style="font-weight: 600;">RFID Tags Management</div>
+              <div style="font-size: 11px; color: var(--text3);">Track tag connections to users & instruments, register, and delete tags</div>
             </div>
           </button>
         </div>

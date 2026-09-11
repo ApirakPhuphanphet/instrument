@@ -43,6 +43,17 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span>Users</span>
         </div>
+
+        <div
+          class="nav-item"
+          :class="{ active: currentPage === 'rfids' }"
+          @click="navigate('rfids')"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+          <span>RFID Tags</span>
+        </div>
       </nav>
 
       <!-- Sidebar Bottom Status -->
@@ -122,6 +133,11 @@
           ref="usersViewRef"
           @users-count-updated="onUsersCountUpdated"
         />
+
+        <RfidView
+          v-show="currentPage === 'rfids'"
+          ref="rfidViewRef"
+        />
       </main>
     </div>
 
@@ -141,6 +157,7 @@ import { ref, computed, onMounted } from 'vue';
 import DashboardView from '@/views/DashboardView.vue';
 import InstrumentsView from '@/views/InstrumentsView.vue';
 import UsersView from '@/views/UsersView.vue';
+import RfidView from '@/views/RfidView.vue';
 import ApiConfigModal from '@/components/common/ApiConfigModal.vue';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue';
 import ToastContainer from '@/components/common/ToastContainer.vue';
@@ -154,6 +171,7 @@ const apiConfigOpen = ref(false);
 
 const instrumentsViewRef = ref(null);
 const usersViewRef = ref(null);
+const rfidViewRef = ref(null);
 
 const dashboardStats = ref({
   total: 0,
@@ -167,7 +185,8 @@ const pageTitle = computed(() => {
   const titles = {
     dashboard: 'Dashboard & System Overview',
     instruments: 'Instruments Management',
-    users: 'Users Management'
+    users: 'Users Management',
+    rfids: 'RFID Tags Management'
   };
   return titles[currentPage.value] || 'ES-Hub';
 });
@@ -225,9 +244,15 @@ function openAddUser() {
 function handleGlobalSearch() {
   const val = globalSearchText.value.trim();
   if (val) {
-    currentPage.value = 'instruments';
-    if (instrumentsViewRef.value) {
-      instrumentsViewRef.value.setSearch(val);
+    if (currentPage.value === 'users' && usersViewRef.value) {
+      usersViewRef.value.setSearch(val);
+    } else if (currentPage.value === 'rfids' && rfidViewRef.value) {
+      rfidViewRef.value.setSearch(val);
+    } else {
+      currentPage.value = 'instruments';
+      if (instrumentsViewRef.value) {
+        instrumentsViewRef.value.setSearch(val);
+      }
     }
   }
 }
@@ -254,6 +279,7 @@ function onUsersCountUpdated(count) {
 function refreshAll() {
   if (instrumentsViewRef.value) instrumentsViewRef.value.loadGroups();
   if (usersViewRef.value) usersViewRef.value.loadUsers();
+  if (rfidViewRef.value) rfidViewRef.value.loadRfids();
 }
 
 onMounted(() => {

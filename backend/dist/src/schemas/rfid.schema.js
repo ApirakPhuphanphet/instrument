@@ -90,3 +90,70 @@ export const UnassignedRfidQuerySchema = z.object({
         .transform((val) => (val ? val.toUpperCase() : undefined)),
     currentRfid: z.string().optional()
 });
+export const ListRfidsQuerySchema = z.object({
+    search: z.string().trim().optional(),
+    type: z
+        .preprocess((val) => (val === '' ? undefined : val), z.enum(['LF', 'HF', 'lf', 'hf']).optional())
+        .transform((val) => (val ? val.toUpperCase() : undefined)),
+    status: z.enum(['all', 'assigned', 'unassigned', 'staff', 'instrument']).default('all'),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().default(50),
+    includeDeleted: z.preprocess((val) => val === 'true' || val === true, z.boolean().default(false))
+});
+export const CreateRfidSchema = z.object({
+    id: z.string().min(1, 'Tag UID is required').trim(),
+    type: z.enum(['LF', 'HF', 'lf', 'hf']).transform((val) => val.toUpperCase())
+});
+export const DeleteRfidQuerySchema = z.object({
+    permanent: z.preprocess((val) => val === 'true' || val === true, z.boolean().default(false)),
+    unlink: z.preprocess((val) => (val === 'false' || val === false ? false : true), z.boolean().default(true))
+});
+export const RfidItemSchema = z.object({
+    id: z.string(),
+    type: z.enum(['LF', 'HF']),
+    createdAt: z.date().or(z.string()),
+    updatedAt: z.date().or(z.string()),
+    deletedAt: z.date().or(z.string()).nullable(),
+    assignedType: z.enum(['staff', 'instrument', 'unassigned']),
+    user: z
+        .object({
+        id: z.string().uuid(),
+        name: z.string()
+    })
+        .nullable(),
+    instrument: z
+        .object({
+        id: z.string().uuid(),
+        name: z.string(),
+        status: z.string(),
+        barcode: z.string().nullable().optional(),
+        group: z
+            .object({
+            id: z.string().uuid(),
+            name: z.string(),
+            brand: z.string().nullable().optional(),
+            model: z.string().nullable().optional()
+        })
+            .nullable()
+            .optional()
+    })
+        .nullable()
+});
+export const ListRfidsResponseSchema = z.object({
+    data: z.array(RfidItemSchema),
+    pagination: z.object({
+        total: z.number(),
+        page: z.number(),
+        limit: z.number(),
+        totalPages: z.number()
+    }),
+    stats: z.object({
+        total: z.number(),
+        lfCount: z.number(),
+        hfCount: z.number(),
+        assignedCount: z.number(),
+        unassignedCount: z.number(),
+        staffAssignedCount: z.number(),
+        instrumentAssignedCount: z.number()
+    })
+});

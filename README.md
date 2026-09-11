@@ -239,8 +239,9 @@ Content-Type: application/json
 - `GET /instrument/load-deleted?timestamp=<unix>`: Synchronize deleted instrument RFID tags to local hardware cache.
 - `POST /LF` / `POST /HF`: Register or upsert raw RFID tags into the database.
 - `POST /LF/check` / `POST /HF/check`: Legacy aliases for staff/instrument verification without LF/HF type restrictions.
-- `GET /LF/load` / `GET /HF/load`: Legacy aliases for `/staff/load` and `/instrument/load`.
-- `GET /LF/load-deleted` / `GET /HF/load-deleted`: Legacy aliases for `/staff/load-deleted` and `/instrument/load-deleted`.
+- `GET /rfids`: List all RFID tags with connected staff or instrument details, search, type/status filters, and statistics.
+- `POST /rfids`: Register or upsert an RFID tag with explicit type (`LF` or `HF`).
+- `DELETE /rfids/:id`: Delete an RFID tag (soft delete by default, unlinks active staff or instrument).
 - `GET /rfid/unassigned`: Query unassigned RFID tags (optional `type` filter: `LF` or `HF`).
 
 ---
@@ -255,7 +256,10 @@ Interactive API documentation and schema explorer is available at **`http://loca
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |
 | `GET` | `/docs` | Interactive Swagger API documentation |
-| **RFID & Hardware Check / Sync** | | |
+| **RFID Management & Hardware Sync** | | |
+| `GET` | `/rfids` | List RFID tags with user/instrument connection details, search, filters, and stats |
+| `POST` | `/rfids` | Register or update RFID tag (`id`, `type`) |
+| `DELETE`| `/rfids/:id` | Soft delete or permanently delete RFID tag (unlinks user/instrument) |
 | `POST` / `GET` | `/staff/check` | Check staff existence and details by RFID tag (LF or HF) |
 | `POST` / `GET` | `/instrument/check` | Check instrument existence and details by RFID tag (LF or HF) |
 | `GET` | `/staff/load` | Incremental staff RFID cache load since Unix timestamp (LF or HF) |
