@@ -64,26 +64,26 @@ export const transactionRoutes = async (fastify) => {
         }
     });
     const processTransaction = async (type, body, reply) => {
-        const { lfuid, hfuid, unixTime } = body;
+        const { staffuid, instrumentuid, unixTime } = body;
         try {
             const user = await prisma.user.findFirst({
-                where: { rfid: String(lfuid) },
+                where: { rfid: String(staffuid) },
                 select: { id: true }
             });
             if (!user) {
-                console.log(`[POST /${type}] User RFID not found: ${lfuid}`);
+                console.log(`[POST /${type}] User RFID not found: ${staffuid}`);
                 return reply.status(404).send({ message: 'User RFID not found', data: body });
             }
             const instrument = await prisma.instrument.findFirst({
-                where: { rfid: String(hfuid) },
+                where: { rfid: String(instrumentuid) },
                 select: { id: true, status: true }
             });
             if (!instrument) {
-                console.log(`[POST /${type}] Instrument RFID not found: ${hfuid}`);
+                console.log(`[POST /${type}] Instrument RFID not found: ${instrumentuid}`);
                 return reply.status(404).send({ message: 'Instrument RFID not found', data: body });
             }
             if (instrument.status != 'borrowed' && instrument.status != 'available') {
-                console.log(`[POST /${type}] Instrument is not available for ${type}: ${hfuid}`);
+                console.log(`[POST /${type}] Instrument is not available for ${type}: ${instrumentuid}`);
                 return reply.status(400).send({ message: `Instrument is not available for ${type}`, data: body });
             }
             const transaction = await prisma.transaction.create({

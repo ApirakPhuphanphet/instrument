@@ -1,7 +1,7 @@
 import { z } from 'zod';
 export const TransactionBodySchema = z.object({
-    lfuid: z.string().min(1, 'LFUID is required'),
-    hfuid: z.string().min(1, 'HFUID is required'),
+    staffuid: z.string().min(1, 'Staff UID is required'),
+    instrumentuid: z.string().min(1, 'Instrument UID is required'),
     unixTime: z.number().optional()
 });
 export const RfidBodySchema = z.object({
@@ -74,6 +74,10 @@ export const InstrumentCheckResponseSchema = z.object({
 });
 export const LoadQuerySchema = z.object({
     timestamp: z.coerce.number().default(0)
+});
+export const LoadResponseSchema = z.object({
+    ids: z.array(z.string()),
+    data: z.array(z.unknown())
 });
 export const RfidTypeEnum = z.enum(['LF', 'HF']);
 export const TransactionTypeEnum = z.enum(['borrow', 'return']);

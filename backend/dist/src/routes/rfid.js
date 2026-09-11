@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { RfidBodySchema, LoadQuerySchema, UnassignedRfidQuerySchema, CheckRfidBodySchema, CheckRfidQuerySchema, StaffCheckResponseSchema, InstrumentCheckResponseSchema } from '../schemas/rfid.schema.js';
+import { RfidBodySchema, LoadQuerySchema, UnassignedRfidQuerySchema, CheckRfidBodySchema, CheckRfidQuerySchema, StaffCheckResponseSchema, InstrumentCheckResponseSchema, LoadResponseSchema } from '../schemas/rfid.schema.js';
 export const rfidRoutes = async (fastify) => {
     // Helper logic for inserting RFID
     const handleInsertRfid = async (type, body, reply) => {
@@ -134,8 +134,8 @@ export const rfidRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error', checked_rfid: null });
         }
     };
-    // Helper logic for loading RFID
-    const handleLoadRfid = async (type, timestamp, reply) => {
+    // Helper logic for loading staff RFID records (LF or HF)
+    const handleLoadStaff = async (timestamp, reply, routeName = 'GET /staff/load') => {
         if (!Number.isFinite(timestamp)) {
             return reply.status(400).send({
                 message: 'timestamp must be a valid Unix timestamp',
@@ -146,30 +146,44 @@ export const rfidRoutes = async (fastify) => {
             const dateFilter = new Date(timestamp * 1000);
             const rows = await prisma.rfid.findMany({
                 where: {
-                    type: type,
-                    updatedAt: { gt: dateFilter },
                     deletedAt: null,
+                    users: {
+                        some: {
+                            deletedAt: null
+                        }
+                    },
                     OR: [
-                        { users: { some: {} } },
-                        { instruments: { some: {} } }
+                        { updatedAt: { gt: dateFilter } },
+                        { users: { some: { deletedAt: null, updatedAt: { gt: dateFilter } } } }
                     ]
                 },
                 orderBy: { updatedAt: 'asc' },
-                select: { id: true, type: true, updatedAt: true }
+                select: {
+                    id: true,
+                    type: true,
+                    updatedAt: true,
+                    users: {
+                        where: { deletedAt: null },
+                        select: {
+                            id: true,
+                            name: true
+                        }
+                    }
+                }
             });
-            console.log(`[GET /${type}/load] Loaded RFID records:`, rows);
+            console.log(`[${routeName}] Loaded staff RFID records:`, rows);
             return reply.status(200).send({
                 ids: rows.map((rfid) => rfid.id),
                 data: rows
             });
         }
         catch (error) {
-            console.error(`[GET /${type}/load] Error loading RFID:`, error.message);
+            console.error(`[${routeName}] Error loading staff RFID:`, error.message);
             return reply.status(500).send({ message: 'Internal server error', data: [] });
         }
     };
-    // Helper logic for loading deleted RFID
-    const handleLoadDeletedRfid = async (type, timestamp, reply) => {
+    // Helper logic for loading instrument RFID records (HF or LF)
+    const handleLoadInstrument = async (timestamp, reply, routeName = 'GET /instrument/load') => {
         if (!Number.isFinite(timestamp)) {
             return reply.status(400).send({
                 message: 'timestamp must be a valid Unix timestamp',
@@ -180,27 +194,138 @@ export const rfidRoutes = async (fastify) => {
             const dateFilter = new Date(timestamp * 1000);
             const rows = await prisma.rfid.findMany({
                 where: {
-                    type: type,
-                    deletedAt: {
-                        not: null,
-                        gt: dateFilter
+                    deletedAt: null,
+                    instruments: {
+                        some: {
+                            deletedAt: null
+                        }
                     },
                     OR: [
-                        { users: { some: {} } },
-                        { instruments: { some: {} } }
+                        { updatedAt: { gt: dateFilter } },
+                        { instruments: { some: { deletedAt: null, updatedAt: { gt: dateFilter } } } }
                     ]
                 },
-                orderBy: { deletedAt: 'asc' },
-                select: { id: true, type: true, deletedAt: true }
+                orderBy: { updatedAt: 'asc' },
+                select: {
+                    id: true,
+                    type: true,
+                    updatedAt: true,
+                    instruments: {
+                        where: { deletedAt: null },
+                        select: {
+                            id: true,
+                            name: true,
+                            status: true
+                        }
+                    }
+                }
             });
-            console.log(`[GET /${type}/load-deleted] Loaded deleted RFID records:`, rows);
+            console.log(`[${routeName}] Loaded instrument RFID records:`, rows);
             return reply.status(200).send({
                 ids: rows.map((rfid) => rfid.id),
                 data: rows
             });
         }
         catch (error) {
-            console.error(`[GET /${type}/load-deleted] Error loading deleted RFID:`, error.message);
+            console.error(`[${routeName}] Error loading instrument RFID:`, error.message);
+            return reply.status(500).send({ message: 'Internal server error', data: [] });
+        }
+    };
+    // Helper logic for loading deleted staff RFID records
+    const handleLoadDeletedStaff = async (timestamp, reply, routeName = 'GET /staff/load-deleted') => {
+        if (!Number.isFinite(timestamp)) {
+            return reply.status(400).send({
+                message: 'timestamp must be a valid Unix timestamp',
+                data: []
+            });
+        }
+        try {
+            const dateFilter = new Date(timestamp * 1000);
+            const [deletedRfids, deletedUsers] = await Promise.all([
+                prisma.rfid.findMany({
+                    where: {
+                        deletedAt: { not: null, gt: dateFilter },
+                        users: { some: {} }
+                    },
+                    orderBy: { deletedAt: 'asc' },
+                    select: { id: true, type: true, deletedAt: true }
+                }),
+                prisma.user.findMany({
+                    where: {
+                        deletedAt: { not: null, gt: dateFilter },
+                        rfid: { not: null }
+                    },
+                    orderBy: { deletedAt: 'asc' },
+                    select: { rfid: true, deletedAt: true }
+                })
+            ]);
+            const uidMap = new Map();
+            for (const r of deletedRfids) {
+                uidMap.set(r.id, { id: r.id, deletedAt: r.deletedAt, type: r.type });
+            }
+            for (const u of deletedUsers) {
+                if (u.rfid && !uidMap.has(u.rfid)) {
+                    uidMap.set(u.rfid, { id: u.rfid, deletedAt: u.deletedAt });
+                }
+            }
+            const rows = Array.from(uidMap.values());
+            console.log(`[${routeName}] Loaded deleted staff RFID records:`, rows);
+            return reply.status(200).send({
+                ids: rows.map((r) => r.id),
+                data: rows
+            });
+        }
+        catch (error) {
+            console.error(`[${routeName}] Error loading deleted staff RFID:`, error.message);
+            return reply.status(500).send({ message: 'Internal server error', data: [] });
+        }
+    };
+    // Helper logic for loading deleted instrument RFID records
+    const handleLoadDeletedInstrument = async (timestamp, reply, routeName = 'GET /instrument/load-deleted') => {
+        if (!Number.isFinite(timestamp)) {
+            return reply.status(400).send({
+                message: 'timestamp must be a valid Unix timestamp',
+                data: []
+            });
+        }
+        try {
+            const dateFilter = new Date(timestamp * 1000);
+            const [deletedRfids, deletedInstruments] = await Promise.all([
+                prisma.rfid.findMany({
+                    where: {
+                        deletedAt: { not: null, gt: dateFilter },
+                        instruments: { some: {} }
+                    },
+                    orderBy: { deletedAt: 'asc' },
+                    select: { id: true, type: true, deletedAt: true }
+                }),
+                prisma.instrument.findMany({
+                    where: {
+                        deletedAt: { not: null, gt: dateFilter },
+                        rfid: { not: null }
+                    },
+                    orderBy: { deletedAt: 'asc' },
+                    select: { rfid: true, deletedAt: true }
+                })
+            ]);
+            const uidMap = new Map();
+            for (const r of deletedRfids) {
+                uidMap.set(r.id, { id: r.id, deletedAt: r.deletedAt, type: r.type });
+            }
+            for (const inst of deletedInstruments) {
+                if (inst.rfid && !uidMap.has(inst.rfid)) {
+                    uidMap.set(inst.rfid, { id: inst.rfid, deletedAt: inst.deletedAt });
+                }
+            }
+            const rows = Array.from(uidMap.values());
+            console.log(`[${routeName}] Loaded deleted instrument RFID records:`, rows);
+            return reply.status(200).send({
+                ids: rows.map((r) => r.id),
+                data: rows
+            });
+        }
+        catch (error) {
+            console.error(`[${routeName}] Error loading deleted instrument RFID:`, error.message);
             return reply.status(500).send({ message: 'Internal server error', data: [] });
         }
     };
@@ -362,14 +487,82 @@ export const rfidRoutes = async (fastify) => {
         console.log('[POST /HF/check] Legacy body received:', body);
         return handleCheckInstrument(rfidId, reply, 'POST /HF/check');
     });
-    // GET /LF/load
+    // GET /staff/load - Load staff RFID records updated after timestamp (LF or HF)
+    fastify.get('/staff/load', {
+        schema: {
+            tags: ['Staff', 'RFID'],
+            summary: 'Load staff RFID records updated after timestamp (LF or HF)',
+            querystring: LoadQuerySchema,
+            response: {
+                200: LoadResponseSchema,
+                400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
+                500: z.object({ message: z.string(), data: z.array(z.unknown()) })
+            }
+        }
+    }, async (request, reply) => {
+        const query = request.query;
+        console.log('[GET /staff/load] Loading data after timestamp: ' + query.timestamp);
+        return handleLoadStaff(query.timestamp, reply, 'GET /staff/load');
+    });
+    // GET /staff/load-deleted - Load deleted staff RFID records after timestamp (LF or HF)
+    fastify.get('/staff/load-deleted', {
+        schema: {
+            tags: ['Staff', 'RFID'],
+            summary: 'Load deleted staff RFID records after timestamp (LF or HF)',
+            querystring: LoadQuerySchema,
+            response: {
+                200: LoadResponseSchema,
+                400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
+                500: z.object({ message: z.string(), data: z.array(z.unknown()) })
+            }
+        }
+    }, async (request, reply) => {
+        const query = request.query;
+        console.log('[GET /staff/load-deleted] Loading data after timestamp: ' + query.timestamp);
+        return handleLoadDeletedStaff(query.timestamp, reply, 'GET /staff/load-deleted');
+    });
+    // GET /instrument/load - Load instrument RFID records updated after timestamp (HF or LF)
+    fastify.get('/instrument/load', {
+        schema: {
+            tags: ['Instruments', 'RFID'],
+            summary: 'Load instrument RFID records updated after timestamp (HF or LF)',
+            querystring: LoadQuerySchema,
+            response: {
+                200: LoadResponseSchema,
+                400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
+                500: z.object({ message: z.string(), data: z.array(z.unknown()) })
+            }
+        }
+    }, async (request, reply) => {
+        const query = request.query;
+        console.log('[GET /instrument/load] Loading data after timestamp: ' + query.timestamp);
+        return handleLoadInstrument(query.timestamp, reply, 'GET /instrument/load');
+    });
+    // GET /instrument/load-deleted - Load deleted instrument RFID records after timestamp (HF or LF)
+    fastify.get('/instrument/load-deleted', {
+        schema: {
+            tags: ['Instruments', 'RFID'],
+            summary: 'Load deleted instrument RFID records after timestamp (HF or LF)',
+            querystring: LoadQuerySchema,
+            response: {
+                200: LoadResponseSchema,
+                400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
+                500: z.object({ message: z.string(), data: z.array(z.unknown()) })
+            }
+        }
+    }, async (request, reply) => {
+        const query = request.query;
+        console.log('[GET /instrument/load-deleted] Loading data after timestamp: ' + query.timestamp);
+        return handleLoadDeletedInstrument(query.timestamp, reply, 'GET /instrument/load-deleted');
+    });
+    // GET /LF/load - Legacy alias for /staff/load
     fastify.get('/LF/load', {
         schema: {
             tags: ['RFID'],
-            summary: 'Load LF RFID records updated after timestamp',
+            summary: 'Load staff RFID records updated after timestamp (Legacy alias for /staff/load)',
             querystring: LoadQuerySchema,
             response: {
-                200: z.object({ ids: z.array(z.string()), data: z.array(z.unknown()) }),
+                200: LoadResponseSchema,
                 400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
                 500: z.object({ message: z.string(), data: z.array(z.unknown()) })
             }
@@ -377,16 +570,16 @@ export const rfidRoutes = async (fastify) => {
     }, async (request, reply) => {
         const query = request.query;
         console.log('[GET /LF/load] Loading data after timestamp: ' + query.timestamp);
-        return handleLoadRfid('LF', query.timestamp, reply);
+        return handleLoadStaff(query.timestamp, reply, 'GET /LF/load');
     });
-    // GET /HF/load
+    // GET /HF/load - Legacy alias for /instrument/load
     fastify.get('/HF/load', {
         schema: {
             tags: ['RFID'],
-            summary: 'Load HF RFID records updated after timestamp',
+            summary: 'Load instrument RFID records updated after timestamp (Legacy alias for /instrument/load)',
             querystring: LoadQuerySchema,
             response: {
-                200: z.object({ ids: z.array(z.string()), data: z.array(z.unknown()) }),
+                200: LoadResponseSchema,
                 400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
                 500: z.object({ message: z.string(), data: z.array(z.unknown()) })
             }
@@ -394,16 +587,16 @@ export const rfidRoutes = async (fastify) => {
     }, async (request, reply) => {
         const query = request.query;
         console.log('[GET /HF/load] Loading data after timestamp: ' + query.timestamp);
-        return handleLoadRfid('HF', query.timestamp, reply);
+        return handleLoadInstrument(query.timestamp, reply, 'GET /HF/load');
     });
-    // GET /LF/load-deleted
+    // GET /LF/load-deleted - Legacy alias for /staff/load-deleted
     fastify.get('/LF/load-deleted', {
         schema: {
             tags: ['RFID'],
-            summary: 'Load deleted LF RFID records after timestamp',
+            summary: 'Load deleted staff RFID records after timestamp (Legacy alias for /staff/load-deleted)',
             querystring: LoadQuerySchema,
             response: {
-                200: z.object({ ids: z.array(z.string()), data: z.array(z.unknown()) }),
+                200: LoadResponseSchema,
                 400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
                 500: z.object({ message: z.string(), data: z.array(z.unknown()) })
             }
@@ -411,16 +604,16 @@ export const rfidRoutes = async (fastify) => {
     }, async (request, reply) => {
         const query = request.query;
         console.log('[GET /LF/load-deleted] Loading data after timestamp: ' + query.timestamp);
-        return handleLoadDeletedRfid('LF', query.timestamp, reply);
+        return handleLoadDeletedStaff(query.timestamp, reply, 'GET /LF/load-deleted');
     });
-    // GET /HF/load-deleted
+    // GET /HF/load-deleted - Legacy alias for /instrument/load-deleted
     fastify.get('/HF/load-deleted', {
         schema: {
             tags: ['RFID'],
-            summary: 'Load deleted HF RFID records after timestamp',
+            summary: 'Load deleted instrument RFID records after timestamp (Legacy alias for /instrument/load-deleted)',
             querystring: LoadQuerySchema,
             response: {
-                200: z.object({ ids: z.array(z.string()), data: z.array(z.unknown()) }),
+                200: LoadResponseSchema,
                 400: z.object({ message: z.string(), data: z.array(z.unknown()) }),
                 500: z.object({ message: z.string(), data: z.array(z.unknown()) })
             }
@@ -428,7 +621,7 @@ export const rfidRoutes = async (fastify) => {
     }, async (request, reply) => {
         const query = request.query;
         console.log('[GET /HF/load-deleted] Loading data after timestamp: ' + query.timestamp);
-        return handleLoadDeletedRfid('HF', query.timestamp, reply);
+        return handleLoadDeletedInstrument(query.timestamp, reply, 'GET /HF/load-deleted');
     });
     // GET /rfid/unassigned - Get RFIDs not connected to any active user or instrument
     fastify.get('/rfid/unassigned', {

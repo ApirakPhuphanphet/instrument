@@ -349,11 +349,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "lfuid": {
+                  "staffuid": {
                     "type": "string",
                     "minLength": 1
                   },
-                  "hfuid": {
+                  "instrumentuid": {
                     "type": "string",
                     "minLength": 1
                   },
@@ -362,8 +362,8 @@
                   }
                 },
                 "required": [
-                  "lfuid",
-                  "hfuid"
+                  "staffuid",
+                  "instrumentuid"
                 ],
                 "additionalProperties": false
               }
@@ -469,11 +469,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "lfuid": {
+                  "staffuid": {
                     "type": "string",
                     "minLength": 1
                   },
-                  "hfuid": {
+                  "instrumentuid": {
                     "type": "string",
                     "minLength": 1
                   },
@@ -482,8 +482,8 @@
                   }
                 },
                 "required": [
-                  "lfuid",
-                  "hfuid"
+                  "staffuid",
+                  "instrumentuid"
                 ],
                 "additionalProperties": false
               }
@@ -1966,9 +1966,397 @@
         }
       }
     },
+    "/staff/load": {
+      "get": {
+        "summary": "Load staff RFID records updated after timestamp (LF or HF)",
+        "tags": [
+          "Staff",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "in": "query",
+            "name": "timestamp",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "ids",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/load-deleted": {
+      "get": {
+        "summary": "Load deleted staff RFID records after timestamp (LF or HF)",
+        "tags": [
+          "Staff",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "in": "query",
+            "name": "timestamp",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "ids",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument/load": {
+      "get": {
+        "summary": "Load instrument RFID records updated after timestamp (HF or LF)",
+        "tags": [
+          "Instruments",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "in": "query",
+            "name": "timestamp",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "ids",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument/load-deleted": {
+      "get": {
+        "summary": "Load deleted instrument RFID records after timestamp (HF or LF)",
+        "tags": [
+          "Instruments",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "number",
+              "default": 0
+            },
+            "in": "query",
+            "name": "timestamp",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "ids",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/LF/load": {
       "get": {
-        "summary": "Load LF RFID records updated after timestamp",
+        "summary": "Load staff RFID records updated after timestamp (Legacy alias for /staff/load)",
         "tags": [
           "RFID"
         ],
@@ -2064,7 +2452,7 @@
     },
     "/HF/load": {
       "get": {
-        "summary": "Load HF RFID records updated after timestamp",
+        "summary": "Load instrument RFID records updated after timestamp (Legacy alias for /instrument/load)",
         "tags": [
           "RFID"
         ],
@@ -2160,7 +2548,7 @@
     },
     "/LF/load-deleted": {
       "get": {
-        "summary": "Load deleted LF RFID records after timestamp",
+        "summary": "Load deleted staff RFID records after timestamp (Legacy alias for /staff/load-deleted)",
         "tags": [
           "RFID"
         ],
@@ -2256,7 +2644,7 @@
     },
     "/HF/load-deleted": {
       "get": {
-        "summary": "Load deleted HF RFID records after timestamp",
+        "summary": "Load deleted instrument RFID records after timestamp (Legacy alias for /instrument/load-deleted)",
         "tags": [
           "RFID"
         ],

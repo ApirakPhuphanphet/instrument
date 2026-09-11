@@ -233,10 +233,14 @@ Content-Type: application/json
 ### 4. RFID Tag Management & Sync
 - `POST /staff/check` / `GET /staff/check`: Validate staff membership by RFID tag (accepts any RFID tag, LF or HF).
 - `POST /instrument/check` / `GET /instrument/check`: Validate physical instrument unit by RFID tag (accepts any RFID tag, LF or HF).
+- `GET /staff/load?timestamp=<unix>`: Synchronize active staff RFID tags (LF or HF) updated since timestamp to local hardware cache.
+- `GET /staff/load-deleted?timestamp=<unix>`: Synchronize deleted staff RFID tags to local hardware cache.
+- `GET /instrument/load?timestamp=<unix>`: Synchronize active instrument RFID tags (HF or LF) updated since timestamp to local hardware cache.
+- `GET /instrument/load-deleted?timestamp=<unix>`: Synchronize deleted instrument RFID tags to local hardware cache.
 - `POST /LF` / `POST /HF`: Register or upsert raw RFID tags into the database.
 - `POST /LF/check` / `POST /HF/check`: Legacy aliases for staff/instrument verification without LF/HF type restrictions.
-- `GET /LF/load?timestamp=<unix>` / `GET /HF/load?timestamp=<unix>`: Synchronize newly added or updated RFID tags to local hardware cache.
-- `GET /LF/load-deleted?timestamp=<unix>` / `GET /HF/load-deleted?timestamp=<unix>`: Synchronize deleted RFID tags to local hardware cache.
+- `GET /LF/load` / `GET /HF/load`: Legacy aliases for `/staff/load` and `/instrument/load`.
+- `GET /LF/load-deleted` / `GET /HF/load-deleted`: Legacy aliases for `/staff/load-deleted` and `/instrument/load-deleted`.
 - `GET /rfid/unassigned`: Query unassigned RFID tags (optional `type` filter: `LF` or `HF`).
 
 ---
@@ -251,14 +255,17 @@ Interactive API documentation and schema explorer is available at **`http://loca
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |
 | `GET` | `/docs` | Interactive Swagger API documentation |
-| **RFID & Hardware Check** | | |
+| **RFID & Hardware Check / Sync** | | |
 | `POST` / `GET` | `/staff/check` | Check staff existence and details by RFID tag (LF or HF) |
 | `POST` / `GET` | `/instrument/check` | Check instrument existence and details by RFID tag (LF or HF) |
-| `POST` | `/LF/check` | Legacy alias for `/staff/check` (no LF/HF restriction) |
-| `POST` | `/HF/check` | Legacy alias for `/instrument/check` (no LF/HF restriction) |
+| `GET` | `/staff/load` | Incremental staff RFID cache load since Unix timestamp (LF or HF) |
+| `GET` | `/staff/load-deleted` | Incremental deleted staff RFID sync since Unix timestamp |
+| `GET` | `/instrument/load` | Incremental instrument RFID cache load since Unix timestamp (HF or LF) |
+| `GET` | `/instrument/load-deleted` | Incremental deleted instrument RFID sync since Unix timestamp |
+| `POST` | `/LF/check`, `/HF/check` | Legacy aliases for check endpoints (no LF/HF restriction) |
+| `GET` | `/LF/load`, `/HF/load` | Legacy aliases for load endpoints (no LF/HF restriction) |
+| `GET` | `/LF/load-deleted`, `/HF/load-deleted` | Legacy aliases for deleted load endpoints |
 | `POST` | `/LF`, `/HF` | Register or update raw LF / HF RFID tag |
-| `GET` | `/LF/load`, `/HF/load` | Incremental RFID cache load since Unix timestamp |
-| `GET` | `/LF/load-deleted`, `/HF/load-deleted` | Incremental deleted RFID sync since Unix timestamp |
 | `GET` | `/rfid/unassigned` | List RFID tags not assigned to active staff or instrument |
 | **Instruments** | | |
 | `GET` | `/instruments` | List instruments with pagination, search, and status filters |

@@ -97,6 +97,13 @@ export const LoadQuerySchema = z.object({
 
 export type LoadQuery = z.infer<typeof LoadQuerySchema>;
 
+export const LoadResponseSchema = z.object({
+  ids: z.array(z.string()),
+  data: z.array(z.unknown())
+});
+
+export type LoadResponse = z.infer<typeof LoadResponseSchema>;
+
 export const RfidTypeEnum = z.enum(['LF', 'HF']);
 export type RfidType = z.infer<typeof RfidTypeEnum>;
 
