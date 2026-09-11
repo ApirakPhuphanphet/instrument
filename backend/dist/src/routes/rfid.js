@@ -256,7 +256,11 @@ export const rfidRoutes = async (fastify) => {
                         rfid: { not: null }
                     },
                     orderBy: { deletedAt: 'asc' },
-                    select: { rfid: true, deletedAt: true }
+                    select: {
+                        rfid: true,
+                        deletedAt: true,
+                        rfidRef: { select: { type: true } }
+                    }
                 })
             ]);
             const uidMap = new Map();
@@ -265,7 +269,7 @@ export const rfidRoutes = async (fastify) => {
             }
             for (const u of deletedUsers) {
                 if (u.rfid && !uidMap.has(u.rfid)) {
-                    uidMap.set(u.rfid, { id: u.rfid, deletedAt: u.deletedAt });
+                    uidMap.set(u.rfid, { id: u.rfid, deletedAt: u.deletedAt, type: u.rfidRef?.type });
                 }
             }
             const rows = Array.from(uidMap.values());
@@ -305,7 +309,11 @@ export const rfidRoutes = async (fastify) => {
                         rfid: { not: null }
                     },
                     orderBy: { deletedAt: 'asc' },
-                    select: { rfid: true, deletedAt: true }
+                    select: {
+                        rfid: true,
+                        deletedAt: true,
+                        rfidRef: { select: { type: true } }
+                    }
                 })
             ]);
             const uidMap = new Map();
@@ -314,7 +322,7 @@ export const rfidRoutes = async (fastify) => {
             }
             for (const inst of deletedInstruments) {
                 if (inst.rfid && !uidMap.has(inst.rfid)) {
-                    uidMap.set(inst.rfid, { id: inst.rfid, deletedAt: inst.deletedAt });
+                    uidMap.set(inst.rfid, { id: inst.rfid, deletedAt: inst.deletedAt, type: inst.rfidRef?.type });
                 }
             }
             const rows = Array.from(uidMap.values());
