@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const TransactionBodySchema = z.object({
-  lfuid: z.string().min(1, 'LFUID is required'),
-  hfuid: z.string().min(1, 'HFUID is required'),
+  staffuid: z.string().min(1, 'Staff UID is required'),
+  instrumentuid: z.string().min(1, 'Instrument UID is required'),
   unixTime: z.number().optional()
 });
 
