@@ -76,8 +76,7 @@
 
       <RfidSelect
         v-model="form.rfid"
-        type="HF"
-        label="RFID Tag (HF 13.56MHz for Instruments)"
+        label="RFID Tag (Instrument Unit)"
       />
 
       <ImageUpload

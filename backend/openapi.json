@@ -247,6 +247,10 @@
                               "rfid": {
                                 "type": "string",
                                 "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -599,6 +603,15 @@
                   },
                   "rfid": {
                     "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -699,6 +712,15 @@
                   },
                   "rfid": {
                     "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -772,10 +794,11 @@
         }
       }
     },
-    "/LF/check": {
+    "/staff/check": {
       "post": {
-        "summary": "Check LF RFID existence and association",
+        "summary": "Check staff existence and details by RFID tag (LF or HF)",
         "tags": [
+          "Staff",
           "RFID"
         ],
         "requestBody": {
@@ -785,6 +808,15 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "rfid": {
+                    "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
                   "LF": {
                     "type": "string"
                   },
@@ -797,7 +829,7 @@
                   "hf": {
                     "type": "string"
                   },
-                  "rfid": {
+                  "id": {
                     "type": "string"
                   }
                 },
@@ -822,8 +854,873 @@
                       "nullable": true
                     },
                     "type": {
-                      "type": "string"
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "staff": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "rfid": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "rfid"
+                      ],
+                      "additionalProperties": false
                     }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check staff existence and details by RFID tag query parameter",
+        "tags": [
+          "Staff",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rfid",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "staff",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instrument",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "LF",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "lf",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "HF",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "hf",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "id",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "staff": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "rfid": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "rfid"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument/check": {
+      "post": {
+        "summary": "Check instrument existence and details by RFID tag (HF or LF)",
+        "tags": [
+          "Instruments",
+          "RFID"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rfid": {
+                    "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
+                  "LF": {
+                    "type": "string"
+                  },
+                  "lf": {
+                    "type": "string"
+                  },
+                  "HF": {
+                    "type": "string"
+                  },
+                  "hf": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "instrument": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "rfid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "group_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "rfid"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check instrument existence and details by RFID tag query parameter",
+        "tags": [
+          "Instruments",
+          "RFID"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "rfid",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "staff",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "instrument",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "LF",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "lf",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "HF",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "hf",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "id",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "instrument": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "rfid": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "group_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "status",
+                        "rfid"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "enum": [
+                        "null"
+                      ],
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "checked_rfid"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/LF/check": {
+      "post": {
+        "summary": "Check staff by RFID tag (Legacy alias for /staff/check)",
+        "tags": [
+          "RFID"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "LF": {
+                    "type": "string"
+                  },
+                  "lf": {
+                    "type": "string"
+                  },
+                  "HF": {
+                    "type": "string"
+                  },
+                  "hf": {
+                    "type": "string"
+                  },
+                  "rfid": {
+                    "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "checked_rfid": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "type": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "staff": {}
                   },
                   "required": [
                     "message",
@@ -917,7 +1814,7 @@
     },
     "/HF/check": {
       "post": {
-        "summary": "Check HF RFID existence and association",
+        "summary": "Check instrument by RFID tag (Legacy alias for /instrument/check)",
         "tags": [
           "RFID"
         ],
@@ -942,6 +1839,15 @@
                   },
                   "rfid": {
                     "type": "string"
+                  },
+                  "staff": {
+                    "type": "string"
+                  },
+                  "instrument": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -965,8 +1871,10 @@
                       "nullable": true
                     },
                     "type": {
-                      "type": "string"
-                    }
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "instrument": {}
                   },
                   "required": [
                     "message",
@@ -2878,6 +3786,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "group_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
                   "name": {
                     "type": "string",
                     "minLength": 1
@@ -2895,6 +3808,19 @@
                   },
                   "rfid": {
                     "type": "string",
+                    "nullable": true
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "barcode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "next_maintain_date": {
+                    "type": "string",
+                    "format": "date-time",
                     "nullable": true
                   }
                 },
@@ -2924,6 +3850,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "group_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -2940,6 +3871,29 @@
                         "rfid": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
                         },
                         "createdAt": {
                           "anyOf": [
@@ -2973,6 +3927,36 @@
                               "type": "string"
                             }
                           ],
+                          "nullable": true
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
                           "nullable": true
                         },
                         "rfidRef": {
@@ -3141,6 +4125,15 @@
         "parameters": [
           {
             "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "query",
+            "name": "group_id",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "in": "query",
@@ -3164,10 +4157,54 @@
           },
           {
             "schema": {
+              "type": "string",
+              "enum": [
+                "available",
+                "borrowed",
+                "maintenance",
+                "lost",
+                "retired"
+              ]
+            },
+            "in": "query",
+            "name": "excludeStatus",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string"
             },
             "in": "query",
             "name": "rfid",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "barcode",
+            "required": false
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false",
+                    "1",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "overdue",
             "required": false
           },
           {
@@ -3236,6 +4273,11 @@
                             "type": "string",
                             "format": "uuid"
                           },
+                          "group_id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
                           "name": {
                             "type": "string"
                           },
@@ -3252,6 +4294,29 @@
                           "rfid": {
                             "type": "string",
                             "nullable": true
+                          },
+                          "image_url": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "barcode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "next_maintain_date": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ],
+                            "nullable": true
+                          },
+                          "is_maintenance_overdue": {
+                            "type": "boolean"
                           },
                           "createdAt": {
                             "anyOf": [
@@ -3285,6 +4350,36 @@
                                 "type": "string"
                               }
                             ],
+                            "nullable": true
+                          },
+                          "group": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "brand": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "model": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
                             "nullable": true
                           },
                           "rfidRef": {
@@ -3450,6 +4545,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "group_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -3466,6 +4566,29 @@
                         "rfid": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
                         },
                         "createdAt": {
                           "anyOf": [
@@ -3499,6 +4622,36 @@
                               "type": "string"
                             }
                           ],
+                          "nullable": true
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
                           "nullable": true
                         },
                         "rfidRef": {
@@ -3633,6 +4786,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "group_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
                   "name": {
                     "type": "string",
                     "minLength": 1
@@ -3649,6 +4807,19 @@
                   },
                   "rfid": {
                     "type": "string",
+                    "nullable": true
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "barcode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "next_maintain_date": {
+                    "type": "string",
+                    "format": "date-time",
                     "nullable": true
                   }
                 },
@@ -3686,6 +4857,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "group_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -3702,6 +4878,29 @@
                         "rfid": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
                         },
                         "createdAt": {
                           "anyOf": [
@@ -3735,6 +4934,36 @@
                               "type": "string"
                             }
                           ],
+                          "nullable": true
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
                           "nullable": true
                         },
                         "rfidRef": {
@@ -4049,6 +5278,11 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "group_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -4065,6 +5299,29 @@
                         "rfid": {
                           "type": "string",
                           "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "barcode": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "next_maintain_date": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "is_maintenance_overdue": {
+                          "type": "boolean"
                         },
                         "createdAt": {
                           "anyOf": [
@@ -4098,6 +5355,36 @@
                               "type": "string"
                             }
                           ],
+                          "nullable": true
+                        },
+                        "group": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "brand": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "model": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
                           "nullable": true
                         },
                         "rfidRef": {
@@ -4219,6 +5506,2159 @@
             }
           },
           "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument-groups": {
+      "post": {
+        "summary": "Create a new instrument group",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "brand": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "model": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "brand": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "model": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updatedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "available": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "borrowed": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "retired": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "lost": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "overdue_maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instruments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "group_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "borrowed",
+                                  "maintenance",
+                                  "lost",
+                                  "retired"
+                                ]
+                              },
+                              "rfid": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "barcode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "next_maintain_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "is_maintenance_overdue": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "updatedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "deletedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "group": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "brand": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "image_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "rfidRef": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LF",
+                                      "HF"
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "updatedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "deletedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "type",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "deletedAt"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "status",
+                              "rfid",
+                              "createdAt",
+                              "updatedAt",
+                              "deletedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List instrument groups with stats and nested units",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "search",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "brand",
+            "required": false
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false",
+                    "1",
+                    "0"
+                  ]
+                }
+              ],
+              "default": false
+            },
+            "in": "query",
+            "name": "includeDeleted",
+            "required": false
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false",
+                    "1",
+                    "0"
+                  ]
+                }
+              ],
+              "default": true
+            },
+            "in": "query",
+            "name": "includeUnits",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": true,
+              "minimum": 0,
+              "default": 1
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": true,
+              "minimum": 0,
+              "maximum": 100,
+              "default": 50
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "brand": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "model": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "image_url": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "updatedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "deletedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ],
+                            "nullable": true
+                          },
+                          "stats": {
+                            "type": "object",
+                            "properties": {
+                              "total": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "available": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "borrowed": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "maintenance": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "retired": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "lost": {
+                                "type": "integer",
+                                "default": 0
+                              },
+                              "overdue_maintenance": {
+                                "type": "integer",
+                                "default": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "instruments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "group_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "nullable": true
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "available",
+                                    "borrowed",
+                                    "maintenance",
+                                    "lost",
+                                    "retired"
+                                  ]
+                                },
+                                "rfid": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "image_url": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "barcode": {
+                                  "type": "string",
+                                  "nullable": true
+                                },
+                                "next_maintain_date": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "is_maintenance_overdue": {
+                                  "type": "boolean"
+                                },
+                                "createdAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "updatedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "deletedAt": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    {
+                                      "type": "string"
+                                    }
+                                  ],
+                                  "nullable": true
+                                },
+                                "group": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "format": "uuid"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "brand": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "model": {
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "image_url": {
+                                      "type": "string",
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "nullable": true
+                                },
+                                "rfidRef": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "LF",
+                                        "HF"
+                                      ]
+                                    },
+                                    "createdAt": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "updatedAt": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ]
+                                    },
+                                    "deletedAt": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        {
+                                          "type": "string"
+                                        }
+                                      ],
+                                      "nullable": true
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "type",
+                                    "createdAt",
+                                    "updatedAt",
+                                    "deletedAt"
+                                  ],
+                                  "additionalProperties": false,
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "status",
+                                "rfid",
+                                "createdAt",
+                                "updatedAt",
+                                "deletedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "createdAt",
+                          "updatedAt",
+                          "deletedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "page": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "totalPages": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "page",
+                        "limit",
+                        "totalPages"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data",
+                    "pagination"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument-groups/{id}": {
+      "get": {
+        "summary": "Get instrument group by UUID",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "brand": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "model": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updatedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "available": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "borrowed": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "retired": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "lost": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "overdue_maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instruments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "group_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "borrowed",
+                                  "maintenance",
+                                  "lost",
+                                  "retired"
+                                ]
+                              },
+                              "rfid": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "barcode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "next_maintain_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "is_maintenance_overdue": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "updatedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "deletedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "group": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "brand": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "image_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "rfidRef": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LF",
+                                      "HF"
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "updatedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "deletedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "type",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "deletedAt"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "status",
+                              "rfid",
+                              "createdAt",
+                              "updatedAt",
+                              "deletedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update instrument group by UUID",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "brand": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "model": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "brand": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "model": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updatedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "available": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "borrowed": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "retired": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "lost": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "overdue_maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instruments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "group_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "borrowed",
+                                  "maintenance",
+                                  "lost",
+                                  "retired"
+                                ]
+                              },
+                              "rfid": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "barcode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "next_maintain_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "is_maintenance_overdue": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "updatedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "deletedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "group": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "brand": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "image_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "rfidRef": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LF",
+                                      "HF"
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "updatedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "deletedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "type",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "deletedAt"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "status",
+                              "rfid",
+                              "createdAt",
+                              "updatedAt",
+                              "deletedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete instrument group by UUID",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false",
+                    "1",
+                    "0"
+                  ]
+                }
+              ],
+              "default": false
+            },
+            "in": "query",
+            "name": "permanent",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {}
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instrument-groups/{id}/restore": {
+      "post": {
+        "summary": "Restore a soft-deleted instrument group",
+        "tags": [
+          "Instrument Groups"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "brand": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "model": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "image_url": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "updatedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "deletedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "stats": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "available": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "borrowed": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "retired": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "lost": {
+                              "type": "integer",
+                              "default": 0
+                            },
+                            "overdue_maintenance": {
+                              "type": "integer",
+                              "default": 0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instruments": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "group_id": {
+                                "type": "string",
+                                "format": "uuid",
+                                "nullable": true
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "available",
+                                  "borrowed",
+                                  "maintenance",
+                                  "lost",
+                                  "retired"
+                                ]
+                              },
+                              "rfid": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "barcode": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "next_maintain_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "is_maintenance_overdue": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "updatedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "deletedAt": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "group": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "brand": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "model": {
+                                    "type": "string",
+                                    "nullable": true
+                                  },
+                                  "image_url": {
+                                    "type": "string",
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              },
+                              "rfidRef": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LF",
+                                      "HF"
+                                    ]
+                                  },
+                                  "createdAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "updatedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ]
+                                  },
+                                  "deletedAt": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      {
+                                        "type": "string"
+                                      }
+                                    ],
+                                    "nullable": true
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "type",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "deletedAt"
+                                ],
+                                "additionalProperties": false,
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "status",
+                              "rfid",
+                              "createdAt",
+                              "updatedAt",
+                              "deletedAt"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "createdAt",
+                        "updatedAt",
+                        "deletedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -4459,6 +7899,22 @@
                               "rfid": {
                                 "type": "string",
                                 "nullable": true
+                              },
+                              "image_url": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "next_maintain_date": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  {
+                                    "type": "string"
+                                  }
+                                ],
+                                "nullable": true
                               }
                             },
                             "required": [
@@ -4565,19 +8021,23 @@
                   },
                   "reason": {
                     "type": "string",
-                    "maxLength": 500
+                    "maxLength": 500,
+                    "nullable": true
                   },
                   "notes": {
                     "type": "string",
-                    "maxLength": 1000
+                    "maxLength": 1000,
+                    "nullable": true
                   },
                   "maintainer": {
                     "type": "string",
-                    "maxLength": 200
+                    "maxLength": 200,
+                    "nullable": true
                   },
                   "sent_at": {
                     "type": "string",
-                    "format": "date-time"
+                    "format": "date-time",
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -4702,6 +8162,22 @@
                             },
                             "rfid": {
                               "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "next_maintain_date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ],
                               "nullable": true
                             }
                           },
@@ -4832,22 +8308,38 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "returned_at": {
-                    "type": "string",
-                    "format": "date-time"
+                "anyOf": [
+                  {
+                    "not": {}
                   },
-                  "notes": {
-                    "type": "string",
-                    "maxLength": 1000
-                  },
-                  "maintainer": {
-                    "type": "string",
-                    "maxLength": 200
+                  {
+                    "type": "object",
+                    "properties": {
+                      "returned_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      },
+                      "notes": {
+                        "type": "string",
+                        "maxLength": 1000,
+                        "nullable": true
+                      },
+                      "maintainer": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "nullable": true
+                      },
+                      "next_maintain_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                      }
+                    },
+                    "additionalProperties": false
                   }
-                },
-                "additionalProperties": false
+                ],
+                "default": {}
               }
             }
           }
@@ -4977,6 +8469,22 @@
                             },
                             "rfid": {
                               "type": "string",
+                              "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "next_maintain_date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ],
                               "nullable": true
                             }
                           },
@@ -5209,6 +8717,22 @@
                             "rfid": {
                               "type": "string",
                               "nullable": true
+                            },
+                            "image_url": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "next_maintain_date": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                {
+                                  "type": "string"
+                                }
+                              ],
+                              "nullable": true
                             }
                           },
                           "required": [
@@ -5285,6 +8809,70 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/images/upload": {
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/images/{filename}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "filename",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "filename",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/images/{filename}/download": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "filename",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }

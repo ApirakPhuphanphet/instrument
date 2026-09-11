@@ -231,9 +231,13 @@ Content-Type: application/json
 2. Automatically transitions instrument status back to `available`.
 
 ### 4. RFID Tag Management & Sync
+- `POST /staff/check` / `GET /staff/check`: Validate staff membership by RFID tag (accepts any RFID tag, LF or HF).
+- `POST /instrument/check` / `GET /instrument/check`: Validate physical instrument unit by RFID tag (accepts any RFID tag, LF or HF).
 - `POST /LF` / `POST /HF`: Register or upsert raw RFID tags into the database.
-- `POST /LF/check` / `POST /HF/check`: Validate tag registration.
+- `POST /LF/check` / `POST /HF/check`: Legacy aliases for staff/instrument verification without LF/HF type restrictions.
 - `GET /LF/load?timestamp=<unix>` / `GET /HF/load?timestamp=<unix>`: Synchronize newly added or updated RFID tags to local hardware cache.
+- `GET /LF/load-deleted?timestamp=<unix>` / `GET /HF/load-deleted?timestamp=<unix>`: Synchronize deleted RFID tags to local hardware cache.
+- `GET /rfid/unassigned`: Query unassigned RFID tags (optional `type` filter: `LF` or `HF`).
 
 ---
 
@@ -247,9 +251,18 @@ Interactive API documentation and schema explorer is available at **`http://loca
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |
 | `GET` | `/docs` | Interactive Swagger API documentation |
+| **RFID & Hardware Check** | | |
+| `POST` / `GET` | `/staff/check` | Check staff existence and details by RFID tag (LF or HF) |
+| `POST` / `GET` | `/instrument/check` | Check instrument existence and details by RFID tag (LF or HF) |
+| `POST` | `/LF/check` | Legacy alias for `/staff/check` (no LF/HF restriction) |
+| `POST` | `/HF/check` | Legacy alias for `/instrument/check` (no LF/HF restriction) |
+| `POST` | `/LF`, `/HF` | Register or update raw LF / HF RFID tag |
+| `GET` | `/LF/load`, `/HF/load` | Incremental RFID cache load since Unix timestamp |
+| `GET` | `/LF/load-deleted`, `/HF/load-deleted` | Incremental deleted RFID sync since Unix timestamp |
+| `GET` | `/rfid/unassigned` | List RFID tags not assigned to active staff or instrument |
 | **Instruments** | | |
 | `GET` | `/instruments` | List instruments with pagination, search, and status filters |
-| `POST` | `/instruments` | Create physical instrument unit (group, name, RFID, barcode, image) |
+| `POST` | `/instruments` | Create physical instrument unit (group, name, RFID, barcode, next_maintain_date, image) |
 | `GET` | `/instruments/:id` | Get instrument details |
 | `PATCH`| `/instruments/:id` | Update instrument information |
 | `DELETE`| `/instruments/:id` | Soft delete or permanent delete (cleans up orphaned images) |
@@ -268,12 +281,12 @@ Interactive API documentation and schema explorer is available at **`http://loca
 | **Maintenance** | | |
 | `GET` | `/maintenance` | List maintenance records with status filter and search |
 | `POST` | `/maintenance/send` | Send instrument to maintenance |
-| `POST` | `/maintenance/:id/return`| Return instrument from maintenance (sets status to `available`) |
+| `POST` | `/maintenance/:id/return`| Return instrument from maintenance (sets status to `available`, updates next_maintain_date) |
 | **Users** | | |
 | `GET` | `/users` | List users with pagination and search |
 | `POST` | `/users` | Register a new user |
 | `GET` | `/users/:id` | Get user details |
-| `PATCH`| `/users/:id` | Update user details or assign LF RFID |
+| `PATCH`| `/users/:id` | Update user details or assign RFID |
 | `DELETE`| `/users/:id` | Soft delete user |
 | `POST` | `/users/:id/restore` | Restore soft-deleted user |
 | **Images** | | |

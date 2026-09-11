@@ -42,7 +42,7 @@ const props = defineProps({
   },
   type: {
     type: String,
-    default: 'HF'
+    default: ''
   },
   label: {
     type: String,
@@ -60,9 +60,12 @@ const customRfid = ref('');
 
 async function fetchTags() {
   try {
-    const params = new URLSearchParams({ type: props.type });
+    const params = new URLSearchParams();
+    if (props.type) params.set('type', props.type);
     if (props.modelValue) params.set('currentRfid', props.modelValue);
-    const res = await fetch(`${apiBase.value}/rfid/unassigned?${params.toString()}`);
+    const queryString = params.toString();
+    const url = `${apiBase.value}/rfid/unassigned${queryString ? `?${queryString}` : ''}`;
+    const res = await fetch(url);
     const data = await res.json();
     const fetched = (res.ok && data.data) ? data.data : [];
 
@@ -76,14 +79,14 @@ async function fetchTags() {
     });
 
     if (props.modelValue && !found) {
-      list.unshift({ id: props.modelValue, type: props.type, isCurrent: true });
+      list.unshift({ id: props.modelValue, type: props.type || 'TAG', isCurrent: true });
     }
 
     tagOptions.value = list;
   } catch (err) {
     console.error('Failed to load RFID tags:', err);
     if (props.modelValue) {
-      tagOptions.value = [{ id: props.modelValue, type: props.type, isCurrent: true }];
+      tagOptions.value = [{ id: props.modelValue, type: props.type || 'TAG', isCurrent: true }];
     }
   }
 }

@@ -18,8 +18,7 @@
 
       <RfidSelect
         v-model="form.rfid"
-        type="LF"
-        label="Assigned RFID Tag (LF 125kHz Badge)"
+        label="Assigned RFID Tag (Staff Badge)"
       />
     </div>
 
