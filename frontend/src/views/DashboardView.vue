@@ -118,17 +118,28 @@
           </div>
         </div>
 
-        <!-- Toolbar: Search, Sort, Refresh -->
+        <!-- Toolbar: Year Filter, Search, Sort, Refresh -->
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <!-- Year Selector -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label style="font-size: 11.5px; font-weight: 600; color: var(--text3); white-space: nowrap;">Year:</label>
+            <select v-model="selectedYear" style="font-size: 12px; font-weight: 600;" @change="loadBorrowingStats">
+              <option v-for="yr in availableYears" :key="yr" :value="yr">
+                {{ yr }}{{ yr === currentYear ? ' (This Year)' : '' }}
+              </option>
+              <option value="">All Time</option>
+            </select>
+          </div>
+
           <input
             v-model="searchQuery"
             placeholder="Filter type, brand, model..."
-            style="font-size: 12px; width: 190px;"
+            style="font-size: 12px; width: 170px;"
           />
 
           <select v-model="sortBy" style="font-size: 12px;">
+            <option value="total_borrows_desc">{{ selectedYear ? `Most Borrows in ${selectedYear}` : 'Most Borrows All-Time' }}</option>
             <option value="borrowed_desc">Most Borrowed Currently</option>
-            <option value="total_borrows_desc">Most Borrows All-Time</option>
             <option value="rate_desc">Highest Borrow Rate (%)</option>
             <option value="units_desc">Total Inventory Units</option>
             <option value="name_asc">Name (A-Z)</option>
@@ -174,8 +185,11 @@
         </div>
         <span style="color: var(--border);">|</span>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2);">
-          <span style="color: var(--text3);">Cumulative All-Time Borrows:</span>
-          <span class="mono" style="font-weight: 700; color: var(--accent);">{{ borrowingSummary.total_borrow_transactions }} transactions</span>
+          <span style="color: var(--text3);">{{ selectedYear ? `Borrows in ${selectedYear}:` : 'Cumulative All-Time Borrows:' }}</span>
+          <span class="mono" style="font-weight: 700; color: var(--accent);">{{ borrowingSummary.total_borrow_transactions }} borrows</span>
+          <span v-if="selectedYear && borrowingSummary.all_time_borrow_transactions !== undefined" style="font-size: 11px; color: var(--text3);">
+            ({{ borrowingSummary.all_time_borrow_transactions }} all-time)
+          </span>
         </div>
         <span style="color: var(--border);">|</span>
         <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2);">
@@ -314,12 +328,15 @@
 
             <!-- All-time borrows + quick breakdown pills -->
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--text3); flex-wrap: wrap; gap: 6px;">
-              <div style="display: flex; align-items: center; gap: 4px;" title="Cumulative borrow transactions recorded">
+              <div style="display: flex; align-items: center; gap: 4px;" :title="selectedYear ? `Borrows recorded in ${selectedYear}` : 'Cumulative borrow transactions recorded'">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
                   <path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
                 </svg>
-                <span>Total Borrows:</span>
-                <span class="mono" style="font-weight: 700; color: var(--accent);">{{ item.total_borrows }}</span>
+                <span>{{ selectedYear ? `Borrows (${selectedYear}):` : 'Total Borrows:' }}</span>
+                <span class="mono" style="font-weight: 700; color: var(--accent); font-size: 12.5px;">{{ item.total_borrows }}</span>
+                <span v-if="selectedYear && item.all_time_borrows !== undefined" style="font-size: 10px; color: var(--text3); margin-left: 2px;">
+                  ({{ item.all_time_borrows }} all-time)
+                </span>
               </div>
 
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -522,8 +539,12 @@ const systemOverviewStats = ref(null);
 const isLoadingBorrowing = ref(false);
 const borrowingError = ref(null);
 
+const currentYear = new Date().getFullYear();
+const selectedYear = ref(currentYear);
+const availableYears = ref([currentYear, currentYear - 1]);
+
 const searchQuery = ref('');
-const sortBy = ref('borrowed_desc');
+const sortBy = ref('total_borrows_desc');
 
 const displayTotalUnits = computed(() => {
   return systemOverviewStats.value?.total ?? borrowingSummary.value?.total_units ?? props.stats.total;
@@ -564,10 +585,10 @@ const filteredBorrowingStats = computed(() => {
   }
 
   // Sort
-  if (sortBy.value === 'borrowed_desc') {
-    list.sort((a, b) => b.currently_borrowed - a.currently_borrowed || b.total_borrows - a.total_borrows);
-  } else if (sortBy.value === 'total_borrows_desc') {
+  if (sortBy.value === 'total_borrows_desc') {
     list.sort((a, b) => b.total_borrows - a.total_borrows || b.currently_borrowed - a.currently_borrowed);
+  } else if (sortBy.value === 'borrowed_desc') {
+    list.sort((a, b) => b.currently_borrowed - a.currently_borrowed || b.total_borrows - a.total_borrows);
   } else if (sortBy.value === 'rate_desc') {
     list.sort((a, b) => b.borrow_rate_percent - a.borrow_rate_percent || b.currently_borrowed - a.currently_borrowed);
   } else if (sortBy.value === 'units_desc') {
@@ -596,13 +617,18 @@ async function loadBorrowingStats() {
   borrowingError.value = null;
   loadSystemStats();
   try {
-    const res = await fetch(`${apiBase.value}/dashboard/borrowing-stats`);
+    const queryParam = selectedYear.value ? `?year=${selectedYear.value}` : '';
+    const res = await fetch(`${apiBase.value}/dashboard/borrowing-stats${queryParam}`);
     if (!res.ok) {
       throw new Error(`Failed to load borrowing stats: ${res.status}`);
     }
     const data = await res.json();
     borrowingStats.value = data.by_type || data.stats || [];
     borrowingSummary.value = data.summary || null;
+    if (data.summary?.available_years && Array.isArray(data.summary.available_years)) {
+      const yearSet = new Set([currentYear, ...data.summary.available_years]);
+      availableYears.value = Array.from(yearSet).sort((a, b) => b - a);
+    }
   } catch (err) {
     console.error('Error loading dashboard borrowing stats:', err);
     borrowingError.value = err.message || 'Error loading borrowing stats';

@@ -9916,9 +9916,21 @@
     },
     "/dashboard/borrowing-stats": {
       "get": {
-        "summary": "Get amount of borrowing of each type of instrument (currently borrowed and all-time borrows)",
+        "summary": "Get amount of borrowing of each type of instrument with optional year filter",
         "tags": [
           "Dashboard"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            },
+            "in": "query",
+            "name": "year",
+            "required": false
+          }
         ],
         "responses": {
           "200": {
@@ -9946,8 +9958,21 @@
                         "total_borrow_transactions": {
                           "type": "number"
                         },
+                        "all_time_borrow_transactions": {
+                          "type": "number"
+                        },
                         "overall_borrow_rate": {
                           "type": "number"
+                        },
+                        "selected_year": {
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "available_years": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
                         }
                       },
                       "required": [
@@ -10000,6 +10025,9 @@
                             "type": "number"
                           },
                           "total_borrows": {
+                            "type": "number"
+                          },
+                          "all_time_borrows": {
                             "type": "number"
                           }
                         },
@@ -10057,6 +10085,9 @@
                             "type": "number"
                           },
                           "total_borrows": {
+                            "type": "number"
+                          },
+                          "all_time_borrows": {
                             "type": "number"
                           }
                         },

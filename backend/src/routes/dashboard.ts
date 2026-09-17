@@ -3,16 +3,19 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import {
   DashboardBorrowingStatsResponseSchema,
+  DashboardBorrowingStatsQuerySchema,
+  DashboardBorrowingStatsQuery,
   DashboardOverviewStatsResponseSchema,
   BorrowingStatByType
 } from '../schemas/dashboard.schema.js';
 
 export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  // GET /dashboard/borrowing-stats - Get borrowing amounts and rates by instrument type
+  // GET /dashboard/borrowing-stats - Get borrowing amounts and rates by instrument type (with optional year filter)
   fastify.get('/dashboard/borrowing-stats', {
     schema: {
       tags: ['Dashboard'],
-      summary: 'Get amount of borrowing of each type of instrument (currently borrowed and all-time borrows)',
+      summary: 'Get amount of borrowing of each type of instrument with optional year filter',
+      querystring: DashboardBorrowingStatsQuerySchema,
       response: {
         200: DashboardBorrowingStatsResponseSchema,
         500: z.object({ message: z.string() })
@@ -20,6 +23,8 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   }, async (request, reply) => {
     try {
+      const { year } = (request.query as DashboardBorrowingStatsQuery) || {};
+
       // 1. Fetch active instrument groups with their non-deleted, non-retired instruments
       const groups = await prisma.instrumentGroup.findMany({
         where: { deletedAt: null },
@@ -44,17 +49,49 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
         }
       });
 
-      // 3. Count borrow transactions per instrument
-      const borrowCounts = await prisma.transaction.groupBy({
-        by: ['instrument_id'],
-        where: {
-          type: 'borrow',
-          deletedAt: null
-        },
-        _count: {
-          id: true
-        }
+      // 3. Determine available transaction years
+      const allBorrowTxs = await prisma.transaction.findMany({
+        where: { type: 'borrow', deletedAt: null },
+        select: { timestamp: true }
       });
+
+      const txYearsSet = new Set<number>();
+      const currentYear = new Date().getUTCFullYear();
+      txYearsSet.add(currentYear);
+      txYearsSet.add(2025);
+      txYearsSet.add(2026);
+      for (const t of allBorrowTxs) {
+        txYearsSet.add(new Date(t.timestamp).getUTCFullYear());
+      }
+      const availableYears = Array.from(txYearsSet).sort((a, b) => b - a);
+
+      // 4. Set up transaction query filters for selected year vs all-time
+      const whereTx: any = {
+        type: 'borrow',
+        deletedAt: null
+      };
+
+      if (year) {
+        const startOfYear = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+        const endOfYear = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+        whereTx.timestamp = {
+          gte: startOfYear,
+          lte: endOfYear
+        };
+      }
+
+      const [borrowCounts, allTimeBorrowCounts] = await Promise.all([
+        prisma.transaction.groupBy({
+          by: ['instrument_id'],
+          where: whereTx,
+          _count: { id: true }
+        }),
+        prisma.transaction.groupBy({
+          by: ['instrument_id'],
+          where: { type: 'borrow', deletedAt: null },
+          _count: { id: true }
+        })
+      ]);
 
       const borrowCountByInstrument = new Map<string, number>();
       let totalBorrowTransactions = 0;
@@ -63,7 +100,14 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
         totalBorrowTransactions += b._count.id;
       }
 
-      // 4. Aggregate stats for each instrument group / type
+      const allTimeBorrowCountByInstrument = new Map<string, number>();
+      let allTimeBorrowTransactions = 0;
+      for (const b of allTimeBorrowCounts) {
+        allTimeBorrowCountByInstrument.set(b.instrument_id, b._count.id);
+        allTimeBorrowTransactions += b._count.id;
+      }
+
+      // 5. Aggregate stats for each instrument group / type
       let totalUnitsCount = 0;
       let totalBorrowedUnitsCount = 0;
 
@@ -73,6 +117,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
         let availableUnits = 0;
         let maintenanceUnits = 0;
         let totalBorrows = 0;
+        let allTimeBorrows = 0;
 
         for (const inst of g.instruments) {
           if (inst.status === 'borrowed') currentlyBorrowed++;
@@ -80,6 +125,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
           else if (inst.status === 'maintenance') maintenanceUnits++;
 
           totalBorrows += borrowCountByInstrument.get(inst.id) || 0;
+          allTimeBorrows += allTimeBorrowCountByInstrument.get(inst.id) || 0;
         }
 
         totalUnitsCount += totalUnits;
@@ -100,7 +146,8 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
           available_units: availableUnits,
           maintenance_units: maintenanceUnits,
           borrow_rate_percent: borrowRatePercent,
-          total_borrows: totalBorrows
+          total_borrows: totalBorrows,
+          all_time_borrows: allTimeBorrows
         };
       });
 
@@ -110,6 +157,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
         let availableUnits = 0;
         let maintenanceUnits = 0;
         let totalBorrows = 0;
+        let allTimeBorrows = 0;
 
         for (const inst of standaloneInstruments) {
           if (inst.status === 'borrowed') currentlyBorrowed++;
@@ -117,6 +165,7 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
           else if (inst.status === 'maintenance') maintenanceUnits++;
 
           totalBorrows += borrowCountByInstrument.get(inst.id) || 0;
+          allTimeBorrows += allTimeBorrowCountByInstrument.get(inst.id) || 0;
         }
 
         totalUnitsCount += standaloneInstruments.length;
@@ -137,12 +186,13 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
           available_units: availableUnits,
           maintenance_units: maintenanceUnits,
           borrow_rate_percent: borrowRatePercent,
-          total_borrows: totalBorrows
+          total_borrows: totalBorrows,
+          all_time_borrows: allTimeBorrows
         });
       }
 
-      // Sort by currently borrowed descending, then total borrows descending
-      byType.sort((a, b) => b.currently_borrowed - a.currently_borrowed || b.total_borrows - a.total_borrows);
+      // Sort by borrows in selected year descending, then currently borrowed descending
+      byType.sort((a, b) => b.total_borrows - a.total_borrows || b.currently_borrowed - a.currently_borrowed);
 
       const overallBorrowRate = totalUnitsCount > 0
         ? Math.round((totalBorrowedUnitsCount / totalUnitsCount) * 1000) / 10
@@ -155,7 +205,10 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
           total_units: totalUnitsCount,
           currently_borrowed_units: totalBorrowedUnitsCount,
           total_borrow_transactions: totalBorrowTransactions,
-          overall_borrow_rate: overallBorrowRate
+          all_time_borrow_transactions: allTimeBorrowTransactions,
+          overall_borrow_rate: overallBorrowRate,
+          selected_year: year || null,
+          available_years: availableYears
         },
         by_type: byType,
         stats: byType

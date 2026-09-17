@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const DashboardBorrowingStatsQuerySchema = z.object({
+  year: z.coerce.number().int().min(2000).max(2100).optional()
+});
+
+export type DashboardBorrowingStatsQuery = z.infer<typeof DashboardBorrowingStatsQuerySchema>;
+
 export const BorrowingStatByTypeSchema = z.object({
   group_id: z.string().uuid().nullable(),
   name: z.string(),
@@ -11,7 +17,8 @@ export const BorrowingStatByTypeSchema = z.object({
   available_units: z.number(),
   maintenance_units: z.number(),
   borrow_rate_percent: z.number(),
-  total_borrows: z.number()
+  total_borrows: z.number(),
+  all_time_borrows: z.number().optional()
 });
 
 export type BorrowingStatByType = z.infer<typeof BorrowingStatByTypeSchema>;
@@ -23,7 +30,10 @@ export const DashboardBorrowingStatsResponseSchema = z.object({
     total_units: z.number(),
     currently_borrowed_units: z.number(),
     total_borrow_transactions: z.number(),
-    overall_borrow_rate: z.number()
+    all_time_borrow_transactions: z.number().optional(),
+    overall_borrow_rate: z.number(),
+    selected_year: z.number().nullable().optional(),
+    available_years: z.array(z.number()).optional()
   }),
   by_type: z.array(BorrowingStatByTypeSchema),
   stats: z.array(BorrowingStatByTypeSchema).optional()
