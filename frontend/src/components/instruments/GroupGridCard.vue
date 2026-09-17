@@ -90,10 +90,10 @@
         Manage Units ({{ activeUnits.length }})
       </button>
       <div style="display: flex; gap: 6px;">
-        <button class="btn btn-sm btn-primary" title="Add Unit" @click="emit('add-unit', group.id)">
+        <button class="btn btn-sm btn-primary" title="Add Unit" @click="emit('add-unit', group.is_standalone ? '' : group.id)">
           + Unit
         </button>
-        <button class="btn btn-sm" title="Edit Group" @click="emit('edit-group', group)">
+        <button v-if="!group.is_standalone" class="btn btn-sm" title="Edit Group" @click="emit('edit-group', group)">
           Edit
         </button>
       </div>

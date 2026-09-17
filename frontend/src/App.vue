@@ -114,6 +114,7 @@
       <!-- Content Pages Container -->
       <main id="content">
         <DashboardView
+          ref="dashboardViewRef"
           v-show="currentPage === 'dashboard'"
           :stats="dashboardStats"
           @navigate="onDashboardNavigate"
@@ -169,6 +170,7 @@ const currentPage = ref('dashboard');
 const globalSearchText = ref('');
 const apiConfigOpen = ref(false);
 
+const dashboardViewRef = ref(null);
 const instrumentsViewRef = ref(null);
 const usersViewRef = ref(null);
 const rfidViewRef = ref(null);
@@ -210,12 +212,22 @@ const hostDisplay = computed(() => {
 
 function navigate(page) {
   currentPage.value = page;
+  if (page === 'dashboard' && dashboardViewRef.value) {
+    dashboardViewRef.value.loadBorrowingStats();
+  } else if (page === 'instruments' && instrumentsViewRef.value) {
+    instrumentsViewRef.value.loadGroups();
+  }
 }
 
-function onDashboardNavigate(page, subTab) {
+function onDashboardNavigate(page, subTab, searchTerm) {
   currentPage.value = page;
-  if (page === 'instruments' && subTab && instrumentsViewRef.value) {
-    instrumentsViewRef.value.switchTab(subTab);
+  if (page === 'instruments' && instrumentsViewRef.value) {
+    if (subTab) {
+      instrumentsViewRef.value.switchTab(subTab);
+    }
+    if (searchTerm) {
+      instrumentsViewRef.value.setSearch(searchTerm);
+    }
   }
 }
 
@@ -270,6 +282,9 @@ function onInstrumentStatsUpdated({ total, available, maintenance, overdue }) {
   dashboardStats.value.available = available;
   dashboardStats.value.maintenance = maintenance;
   dashboardStats.value.overdue = overdue || 0;
+  if (dashboardViewRef.value) {
+    dashboardViewRef.value.loadBorrowingStats();
+  }
 }
 
 function onUsersCountUpdated(count) {
@@ -277,6 +292,7 @@ function onUsersCountUpdated(count) {
 }
 
 function refreshAll() {
+  if (dashboardViewRef.value) dashboardViewRef.value.loadBorrowingStats();
   if (instrumentsViewRef.value) instrumentsViewRef.value.loadGroups();
   if (usersViewRef.value) usersViewRef.value.loadUsers();
   if (rfidViewRef.value) rfidViewRef.value.loadRfids();

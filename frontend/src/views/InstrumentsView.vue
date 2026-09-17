@@ -395,15 +395,65 @@ function setFilterStatus(status) {
 
 async function loadGroups() {
   isLoading.value = true;
-  const params = new URLSearchParams({ limit: '100', includeUnits: 'true' });
-  if (searchQuery.value.trim()) params.set('search', searchQuery.value.trim());
-  if (includeDeleted.value) params.set('includeDeleted', 'true');
+  const groupParams = new URLSearchParams({ limit: '100', includeUnits: 'true' });
+  if (searchQuery.value.trim()) groupParams.set('search', searchQuery.value.trim());
+  if (includeDeleted.value) groupParams.set('includeDeleted', 'true');
+
+  const instParams = new URLSearchParams({ limit: '100' });
+  if (includeDeleted.value) instParams.set('includeDeleted', 'true');
 
   try {
-    const res = await fetch(`${apiBase.value}/instrument-groups?${params.toString()}`);
-    const data = await res.json();
-    if (res.ok) {
-      groupsList.value = data.data || [];
+    const [resGroups, resInstruments] = await Promise.all([
+      fetch(`${apiBase.value}/instrument-groups?${groupParams.toString()}`),
+      fetch(`${apiBase.value}/instruments?${instParams.toString()}`)
+    ]);
+
+    const dataGroups = await resGroups.json();
+    const dataInstruments = await resInstruments.json();
+
+    if (resGroups.ok) {
+      groupsList.value = dataGroups.data || [];
+
+      // Include Standalone Instruments if any exist without a group
+      if (resInstruments.ok && Array.isArray(dataInstruments.data)) {
+        let standaloneUnits = dataInstruments.data.filter(u => !u.group_id);
+        const q = searchQuery.value.trim().toLowerCase();
+        if (q && !'standalone instruments'.includes(q) && !'standalone'.includes(q)) {
+          standaloneUnits = standaloneUnits.filter(u =>
+            (u.name && u.name.toLowerCase().includes(q)) ||
+            (u.barcode && u.barcode.toLowerCase().includes(q)) ||
+            (u.rfid && u.rfid.toLowerCase().includes(q))
+          );
+        }
+
+        if (standaloneUnits.length > 0) {
+          const total = standaloneUnits.length;
+          const available = standaloneUnits.filter(u => u.status === 'available').length;
+          const borrowed = standaloneUnits.filter(u => u.status === 'borrowed').length;
+          const maintenance = standaloneUnits.filter(u => u.status === 'maintenance').length;
+          const overdue_maintenance = standaloneUnits.filter(u => u.is_maintenance_overdue).length;
+
+          groupsList.value.push({
+            id: 'standalone-group',
+            name: 'Standalone Instruments',
+            brand: null,
+            model: null,
+            description: 'Individual physical units not assigned to any group',
+            image_url: null,
+            is_standalone: true,
+            stats: {
+              total,
+              available,
+              borrowed,
+              maintenance,
+              retired: 0,
+              lost: 0,
+              overdue_maintenance
+            },
+            instruments: standaloneUnits
+          });
+        }
+      }
 
       // Calculate totals for dashboard
       let total = 0;
@@ -421,7 +471,7 @@ async function loadGroups() {
 
       emit('stats-updated', { total, available, maintenance, overdue });
     } else {
-      showToast(data.message || 'Failed to load instrument groups', 'error');
+      showToast(dataGroups.message || 'Failed to load instrument groups', 'error');
     }
   } catch (err) {
     showToast('Error connecting to backend API', 'error');
@@ -442,7 +492,7 @@ function openEditGroup(group) {
 }
 
 function openCreateUnit(groupId = '') {
-  preselectedGroupId.value = groupId;
+  preselectedGroupId.value = groupId === 'standalone-group' ? '' : groupId;
   selectedUnit.value = null;
   unitModalOpen.value = true;
 }
@@ -475,6 +525,7 @@ async function quickReturnUnit(unit) {
 }
 
 async function deleteGroup(id) {
+  if (id === 'standalone-group') return;
   if (!confirm('Are you sure you want to delete this instrument group?')) return;
   try {
     const res = await fetch(`${apiBase.value}/instrument-groups/${id}`, { method: 'DELETE' });

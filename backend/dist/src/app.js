@@ -17,6 +17,7 @@ import { instrumentRoutes } from './routes/instrument.js';
 import { instrumentGroupRoutes } from './routes/instrument-group.js';
 import { maintenanceRoutes } from './routes/maintenance.js';
 import { imageRoutes } from './routes/image.js';
+import { dashboardRoutes } from './routes/dashboard.js';
 import { prisma } from './lib/prisma.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,6 +59,7 @@ export async function buildApp() {
     await app.register(instrumentGroupRoutes);
     await app.register(maintenanceRoutes);
     await app.register(imageRoutes);
+    await app.register(dashboardRoutes);
     return app;
 }
 const port = Number(process.env.PORT || 3000);

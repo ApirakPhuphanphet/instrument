@@ -94,8 +94,8 @@
         <div style="display: flex; align-items: center; gap: 6px;" @click.stop>
           <button
             class="btn btn-sm btn-primary"
-            title="Add physical unit to this group"
-            @click="emit('add-unit', group.id)"
+            title="Add physical unit"
+            @click="emit('add-unit', group.is_standalone ? '' : group.id)"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -104,6 +104,7 @@
             <span>Add Unit</span>
           </button>
           <button
+            v-if="!group.is_standalone"
             class="btn btn-sm"
             title="Edit Group"
             @click="emit('edit-group', group)"
@@ -114,6 +115,7 @@
             </svg>
           </button>
           <button
+            v-if="!group.is_standalone"
             class="btn btn-sm btn-danger"
             title="Delete Group"
             @click="emit('delete-group', group.id)"
@@ -136,7 +138,7 @@
         <button
           class="btn btn-sm"
           style="font-size: 11px; padding: 3px 8px;"
-          @click="emit('add-unit', group.id)"
+          @click="emit('add-unit', group.is_standalone ? '' : group.id)"
         >
           + Register Another Unit
         </button>

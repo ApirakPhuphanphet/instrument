@@ -252,10 +252,12 @@ Interactive API documentation and schema explorer is available at **`http://loca
 
 | Method | Endpoint | Description |
 |---|---|---|
-| **System** | | |
+| **System & Dashboard** | | |
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |
 | `GET` | `/docs` | Interactive Swagger API documentation |
+| `GET` | `/dashboard/borrowing-stats` | Aggregated borrowing statistics by instrument type (active loans, historical borrow transactions, borrow rate, summary) |
+| `GET` | `/dashboard/stats` | System-wide overview counters (total, available, borrowed, maintenance, overdue, users, groups, rfids) |
 | **RFID Management & Hardware Sync** | | |
 | `GET` | `/rfids` | List RFID tags with user/instrument connection details, search, filters, and stats |
 | `POST` | `/rfids` | Register or update RFID tag (`id`, `type`) |
