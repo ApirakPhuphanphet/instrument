@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL") no need in prisma schema, we will use .env file to set the DATABASE_URL
+  url      = env("DATABASE_URL") //no need in prisma schema, we will use .env file to set the DATABASE_URL
 }
 
 enum RfidType {
@@ -83,17 +83,17 @@ model InstrumentGroup {
 }
 
 model Instrument {
-  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  group_id  String?          @db.Uuid @map("group_id")
-  name      String
-  status    InstrumentStatus @default(available)
-  rfid      String?
-  image_url String?          @map("image_url")
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group_id           String?          @map("group_id") @db.Uuid
+  name               String
+  status             InstrumentStatus @default(available)
+  rfid               String?
+  image_url          String?          @map("image_url")
   barcode            String?          @map("barcode")
   next_maintain_date DateTime?        @map("next_maintain_date") @db.Timestamptz
   createdAt          DateTime         @default(now()) @map("createdat") @db.Timestamptz
-  updatedAt DateTime         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
-  deletedAt DateTime?        @map("deletedat") @db.Timestamptz
+  updatedAt          DateTime         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt          DateTime?        @map("deletedat") @db.Timestamptz
 
   group        InstrumentGroup? @relation(fields: [group_id], references: [id], onDelete: SetNull)
   rfidRef      Rfid?            @relation(fields: [rfid], references: [id], onDelete: SetNull)
