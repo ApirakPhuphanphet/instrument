@@ -1,7 +1,9 @@
 import { ref } from 'vue';
 
-// Determine initial API Base URL
-const initialBase = localStorage.getItem('es_hub_api_base') || 'http://localhost:3000';
+// Determine initial API Base URL from environment or localStorage
+const envBase = (import.meta.env?.VITE_BACKEND_URL || import.meta.env?.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+export const defaultApiBase = envBase || 'http://localhost:3000';
+const initialBase = localStorage.getItem('es_hub_api_base') || defaultApiBase;
 
 export const apiBase = ref(initialBase);
 export const apiStatus = ref('online');
@@ -16,8 +18,14 @@ export const imagePreview = ref({
 export function useApi() {
   function setApiBase(url) {
     const cleaned = (url || '').trim().replace(/\/+$/, '');
-    apiBase.value = cleaned;
-    localStorage.setItem('es_hub_api_base', cleaned);
+    apiBase.value = cleaned || defaultApiBase;
+    localStorage.setItem('es_hub_api_base', apiBase.value);
+    checkHealth();
+  }
+
+  function resetApiBase() {
+    localStorage.removeItem('es_hub_api_base');
+    apiBase.value = defaultApiBase;
     checkHealth();
   }
 
@@ -78,6 +86,8 @@ export function useApi() {
     openImagePreview,
     closeImagePreview,
     formatDate,
-    formatDateOnly
+    formatDateOnly,
+    defaultApiBase,
+    resetApiBase
   };
 }

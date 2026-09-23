@@ -1,18 +1,28 @@
 <template>
   <Modal :model-value="modelValue" title="Backend API Settings" @update:model-value="emit('update:modelValue', $event)">
     <div>
-      <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 6px;">
-        API Base URL
-      </label>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <label style="font-size: 11.5px; font-weight: 600; color: var(--text2);">
+          API Base URL
+        </label>
+        <button
+          v-if="inputUrl !== defaultApiBase"
+          class="btn btn-sm"
+          style="padding: 2px 8px; font-size: 10.5px;"
+          @click="resetToDefault"
+        >
+          Reset to .env default
+        </button>
+      </div>
       <input
         v-model="inputUrl"
         class="mono"
-        placeholder="http://localhost:3000"
+        :placeholder="defaultApiBase"
         style="width: 100%;"
         @keydown.enter="save"
       />
       <div style="font-size: 11px; color: var(--text3); margin-top: 6px; line-height: 1.4;">
-        Default is <code class="mono">http://localhost:3000</code> or relative URL when served directly by the backend.
+        Configured via frontend <code class="mono">.env</code>: <code class="mono" style="color: var(--accent);">{{ defaultApiBase }}</code>
       </div>
     </div>
 
@@ -38,7 +48,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'saved']);
 
-const { apiBase, setApiBase } = useApi();
+const { apiBase, setApiBase, defaultApiBase, resetApiBase } = useApi();
 const { showToast } = useToast();
 
 const inputUrl = ref(apiBase.value);
@@ -49,8 +59,16 @@ watch(() => props.modelValue, (isOpen) => {
   }
 });
 
+function resetToDefault() {
+  inputUrl.value = defaultApiBase;
+}
+
 function save() {
-  setApiBase(inputUrl.value);
+  if (inputUrl.value === defaultApiBase) {
+    resetApiBase();
+  } else {
+    setApiBase(inputUrl.value);
+  }
   emit('update:modelValue', false);
   emit('saved');
   showToast('API URL saved. Reconnecting...', 'info');

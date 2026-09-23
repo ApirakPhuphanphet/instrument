@@ -363,11 +363,21 @@ All tables implement soft-delete support (`deletedAt`) and timezone-aware timest
 
 ### 2. Frontend Setup
 
-Navigate to the frontend directory and install dependencies:
-```bash
-cd frontend
-npm install
-```
+1. **Navigate to the frontend directory and install dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `frontend/.env` to configure your backend API URL if needed:
+   ```env
+   VITE_BACKEND_URL=http://localhost:3000
+   VITE_API_BASE_URL=http://localhost:3000
+   ```
 
 ---
 
