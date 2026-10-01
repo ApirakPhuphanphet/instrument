@@ -16,15 +16,60 @@
         />
       </div>
 
-      <RfidSelect
-        v-model="form.rfid"
-        label="Assigned RFID Tag (Staff Badge)"
-      />
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+          <label style="font-size: 11.5px; font-weight: 600; color: var(--text2); margin: 0;">
+            Assigned RFID Tag (Staff Badge)
+          </label>
+          <button
+            type="button"
+            class="btn btn-sm"
+            :class="{ 'btn-primary': isScanning }"
+            :disabled="isScanning || isSaving"
+            @click="scanRfidViaMqtt"
+            title="Send MQTT command to scanner and wait for RFID scan"
+            style="font-size: 11px; padding: 3px 9px;"
+          >
+            <span v-if="isScanning" style="display: inline-block;">⏳</span>
+            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+              <circle cx="12" cy="12" r="2"/>
+              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+              <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+            </svg>
+            <span>{{ isScanning ? 'Waiting for RFID Tap (15s)...' : 'Scan RFID (MQTT)' }}</span>
+          </button>
+        </div>
+
+        <RfidSelect
+          v-model="form.rfid"
+          label=""
+        />
+
+        <div
+          v-if="scanFeedback"
+          :style="{
+            marginTop: '6px',
+            fontSize: '11px',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            background: scanFeedback.error ? 'var(--red-bg)' : 'var(--green-bg)',
+            color: scanFeedback.error ? 'var(--red)' : 'var(--green)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }"
+        >
+          <span>{{ scanFeedback.error ? '⚠️' : '✅' }}</span>
+          <span>{{ scanFeedback.message }}</span>
+        </div>
+      </div>
     </div>
 
     <template #footer>
       <button class="btn" @click="emit('update:modelValue', false)">Cancel</button>
-      <button class="btn btn-primary" :disabled="isSaving" @click="save">
+      <button class="btn btn-primary" :disabled="isSaving || isScanning" @click="save">
         {{ isSaving ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create User') }}
       </button>
     </template>
@@ -50,13 +95,105 @@ const { showToast } = useToast();
 
 const isEdit = ref(false);
 const isSaving = ref(false);
+const isScanning = ref(false);
+const scanFeedback = ref(null);
+
 const form = ref({
   id: '',
   name: '',
   rfid: ''
 });
 
+function extractRfidFromReply(replyData) {
+  if (!replyData) return '';
+  if (typeof replyData === 'string') return replyData.trim();
+  if (typeof replyData === 'number') return String(replyData);
+  if (typeof replyData === 'object') {
+    if (replyData.rfid) return String(replyData.rfid).trim();
+    if (replyData.tag) return String(replyData.tag).trim();
+    if (replyData.tagId) return String(replyData.tagId).trim();
+    if (replyData.uid) return String(replyData.uid).trim();
+    if (replyData.userRfid) return String(replyData.userRfid).trim();
+    if (replyData.cardId) return String(replyData.cardId).trim();
+    if (replyData.id) return String(replyData.id).trim();
+    if (replyData.epc) return String(replyData.epc).trim();
+
+    if (replyData.data) {
+      if (typeof replyData.data === 'string' || typeof replyData.data === 'number') {
+        return String(replyData.data).trim();
+      }
+      if (typeof replyData.data === 'object') {
+        return extractRfidFromReply(replyData.data);
+      }
+    }
+
+    if (replyData.readings) {
+      return extractRfidFromReply(replyData.readings);
+    }
+  }
+  return '';
+}
+
+async function scanRfidViaMqtt() {
+  if (isScanning.value) return;
+
+  isScanning.value = true;
+  scanFeedback.value = {
+    error: false,
+    message: 'Scanner waiting: Please tap staff badge / RFID tag on reader...'
+  };
+
+  try {
+    const res = await fetch(`${apiBase.value}/mqtt/request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        topic: 'instrument/device/scanner/command',
+        payload: {
+          action: 'SCAN_USER'
+        },
+        timeout: 15000
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      const scannedRfid = extractRfidFromReply(data.data);
+      if (scannedRfid) {
+        form.value.rfid = scannedRfid;
+        scanFeedback.value = {
+          error: false,
+          message: `Scanned RFID: ${scannedRfid}`
+        };
+        showToast(`RFID scanned: ${scannedRfid}`);
+      } else {
+        const msg = (typeof data.data === 'object' && data.data?.message)
+          ? data.data.message
+          : 'No RFID tag data returned from device';
+        scanFeedback.value = { error: true, message: msg };
+        showToast(msg, 'error');
+      }
+    } else {
+      const errMsg = data.error || data.message || (res.status === 504 ? 'Scan timed out: No RFID badge tapped within 15s' : 'MQTT scan failed');
+      scanFeedback.value = { error: true, message: errMsg };
+      showToast(errMsg, 'error');
+    }
+  } catch (err) {
+    const errMsg = 'Failed to communicate with MQTT API';
+    scanFeedback.value = { error: true, message: errMsg };
+    showToast(errMsg, 'error');
+  } finally {
+    isScanning.value = false;
+  }
+}
+
 watch(() => props.modelValue, (isOpen) => {
+  scanFeedback.value = null;
+  isScanning.value = false;
+
   if (isOpen) {
     if (props.userData && props.userData.id) {
       isEdit.value = true;

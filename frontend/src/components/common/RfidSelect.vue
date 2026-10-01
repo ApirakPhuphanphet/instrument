@@ -1,6 +1,6 @@
 <template>
   <div>
-    <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+    <label v-if="label" style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
       {{ label }}
     </label>
 
