@@ -19,12 +19,22 @@ export class UserService {
     const { name, rfid } = data;
 
     if (rfid) {
-      const rfidRecord = await prisma.rfid.findUnique({
+      let rfidRecord = await prisma.rfid.findUnique({
         where: { id: rfid }
       });
 
       if (!rfidRecord) {
-        throw new UserServiceError(`RFID tag '${rfid}' does not exist. Please register the RFID tag first.`, 404);
+        rfidRecord = await prisma.rfid.create({
+          data: {
+            id: rfid,
+            type: 'LF'
+          }
+        });
+      } else if (rfidRecord.deletedAt !== null) {
+        await prisma.rfid.update({
+          where: { id: rfid },
+          data: { deletedAt: null }
+        });
       }
 
       const existingUserWithRfid = await prisma.user.findFirst({
@@ -145,12 +155,22 @@ export class UserService {
     const { name, rfid } = data;
 
     if (rfid !== undefined && rfid !== null && rfid !== user.rfid) {
-      const rfidRecord = await prisma.rfid.findUnique({
+      let rfidRecord = await prisma.rfid.findUnique({
         where: { id: rfid }
       });
 
       if (!rfidRecord) {
-        throw new UserServiceError(`RFID tag '${rfid}' does not exist. Please register the RFID tag first.`, 404);
+        rfidRecord = await prisma.rfid.create({
+          data: {
+            id: rfid,
+            type: 'LF'
+          }
+        });
+      } else if (rfidRecord.deletedAt !== null) {
+        await prisma.rfid.update({
+          where: { id: rfid },
+          data: { deletedAt: null }
+        });
       }
 
       const existingUserWithRfid = await prisma.user.findFirst({

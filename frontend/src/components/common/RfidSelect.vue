@@ -134,4 +134,9 @@ onMounted(async () => {
   await fetchTags();
   syncFromValue(props.modelValue);
 });
+
+defineExpose({
+  fetchTags,
+  syncFromValue
+});
 </script>

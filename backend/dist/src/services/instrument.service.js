@@ -29,11 +29,22 @@ export class InstrumentService {
     async createInstrument(data) {
         const { group_id, name, status, rfid, image_url, barcode, next_maintain_date } = data;
         if (rfid) {
-            const rfidRecord = await prisma.rfid.findUnique({
+            let rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
             });
             if (!rfidRecord) {
-                throw new InstrumentServiceError(`RFID tag '${rfid}' does not exist. Please register the RFID tag first.`, 404);
+                rfidRecord = await prisma.rfid.create({
+                    data: {
+                        id: rfid,
+                        type: 'HF'
+                    }
+                });
+            }
+            else if (rfidRecord.deletedAt !== null) {
+                await prisma.rfid.update({
+                    where: { id: rfid },
+                    data: { deletedAt: null }
+                });
             }
             const existingInstrumentWithRfid = await prisma.instrument.findFirst({
                 where: {
@@ -164,11 +175,22 @@ export class InstrumentService {
         }
         const { group_id, name, status, rfid, image_url, barcode, next_maintain_date } = data;
         if (rfid !== undefined && rfid !== null && rfid !== instrument.rfid) {
-            const rfidRecord = await prisma.rfid.findUnique({
+            let rfidRecord = await prisma.rfid.findUnique({
                 where: { id: rfid }
             });
             if (!rfidRecord) {
-                throw new InstrumentServiceError(`RFID tag '${rfid}' does not exist. Please register the RFID tag first.`, 404);
+                rfidRecord = await prisma.rfid.create({
+                    data: {
+                        id: rfid,
+                        type: 'HF'
+                    }
+                });
+            }
+            else if (rfidRecord.deletedAt !== null) {
+                await prisma.rfid.update({
+                    where: { id: rfid },
+                    data: { deletedAt: null }
+                });
             }
             const existingInstrumentWithRfid = await prisma.instrument.findFirst({
                 where: {

@@ -43,6 +43,7 @@
         </div>
 
         <RfidSelect
+          ref="rfidSelectRef"
           v-model="form.rfid"
           label=""
         />
@@ -97,6 +98,7 @@ const isEdit = ref(false);
 const isSaving = ref(false);
 const isScanning = ref(false);
 const scanFeedback = ref(null);
+const rfidSelectRef = ref(null);
 
 const form = ref({
   id: '',
@@ -164,11 +166,30 @@ async function scanRfidViaMqtt() {
       const scannedRfid = extractRfidFromReply(data.data);
       if (scannedRfid) {
         form.value.rfid = scannedRfid;
+
+        // Auto-save/register unknown UID into the database
+        const rawCardType = typeof data.data === 'object' ? data.data?.cardType : null;
+        const cardType = (rawCardType === 'HF' || rawCardType === 'LF') ? rawCardType : 'LF';
+
+        try {
+          await fetch(`${apiBase.value}/rfids`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: scannedRfid,
+              type: cardType
+            })
+          });
+          await rfidSelectRef.value?.fetchTags();
+        } catch (regErr) {
+          console.warn('Auto-register RFID in DB warning:', regErr);
+        }
+
         scanFeedback.value = {
           error: false,
-          message: `Scanned RFID: ${scannedRfid}`
+          message: `Scanned & saved ${cardType} tag: ${scannedRfid}`
         };
-        showToast(`RFID scanned: ${scannedRfid}`);
+        showToast(`RFID scanned: ${scannedRfid} (${cardType})`);
       } else {
         const msg = (typeof data.data === 'object' && data.data?.message)
           ? data.data.message
