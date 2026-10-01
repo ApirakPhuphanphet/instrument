@@ -26,6 +26,8 @@ import { instrumentGroupRoutes } from './routes/instrument-group.js';
 import { maintenanceRoutes } from './routes/maintenance.js';
 import { imageRoutes } from './routes/image.js';
 import { dashboardRoutes } from './routes/dashboard.js';
+import { mqttRoutes } from './routes/mqtt.js';
+import { mqttService } from './services/mqtt.service.js';
 import { prisma } from './lib/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +79,7 @@ export async function buildApp() {
   await app.register(maintenanceRoutes);
   await app.register(imageRoutes);
   await app.register(dashboardRoutes);
+  await app.register(mqttRoutes);
 
   return app;
 }
@@ -107,6 +110,7 @@ if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.arg
 
   const gracefulShutdown = async () => {
     await app.close();
+    await mqttService.disconnect();
     await prisma.$disconnect();
     process.exit(0);
   };

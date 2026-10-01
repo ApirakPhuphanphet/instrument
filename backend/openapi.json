@@ -10225,6 +10225,234 @@
           }
         }
       }
+    },
+    "/mqtt/status": {
+      "get": {
+        "summary": "Get MQTT client connection status",
+        "tags": [
+          "MQTT"
+        ],
+        "description": "Check broker connectivity, client ID, and active pending request count",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connected": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "brokerUrl": {
+                      "type": "string"
+                    },
+                    "clientId": {
+                      "type": "string"
+                    },
+                    "defaultResponseTopic": {
+                      "type": "string"
+                    },
+                    "pendingRequestsCount": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "connected",
+                    "status",
+                    "brokerUrl",
+                    "clientId",
+                    "defaultResponseTopic",
+                    "pendingRequestsCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mqtt/request": {
+      "post": {
+        "summary": "Publish MQTT message and wait for reply",
+        "tags": [
+          "MQTT"
+        ],
+        "description": "Workflow: Frontend sends HTTP POST -> Fastify backend publishes message with requestId to MQTT topic -> Device responds on replyTopic -> Fastify matches requestId and returns response to Frontend",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "topic": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The MQTT topic to publish the request command to (e.g. instrument/device/scan)"
+                  },
+                  "payload": {
+                    "description": "The payload data to send to the device/subscriber (JSON object, string, number, etc.)"
+                  },
+                  "replyTopic": {
+                    "type": "string",
+                    "description": "Optional custom topic where the response is expected. Defaults to instrument/responses/{requestId}"
+                  },
+                  "timeout": {
+                    "type": "integer",
+                    "minimum": 500,
+                    "maximum": 60000,
+                    "description": "Timeout in milliseconds to wait for reply (default: 5000ms)"
+                  }
+                },
+                "required": [
+                  "topic"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the request-reply cycle succeeded"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique correlation ID generated for this request"
+                    },
+                    "topic": {
+                      "type": "string",
+                      "description": "The topic where the request was published"
+                    },
+                    "replyTopic": {
+                      "type": "string",
+                      "description": "The topic where the reply was received from"
+                    },
+                    "durationMs": {
+                      "type": "number",
+                      "description": "Time taken in milliseconds to receive the reply"
+                    },
+                    "data": {
+                      "description": "The response data received from the MQTT subscriber"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "requestId",
+                    "topic",
+                    "replyTopic",
+                    "durationMs"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message or failure reason"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message or failure reason"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message or failure reason"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": []
