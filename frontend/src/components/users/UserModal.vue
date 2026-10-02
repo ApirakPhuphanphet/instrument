@@ -165,6 +165,8 @@ function extractRfidFromReply(replyData) {
     if (replyData.tagId) return String(replyData.tagId).trim();
     if (replyData.uid) return String(replyData.uid).trim();
     if (replyData.userRfid) return String(replyData.userRfid).trim();
+    if (replyData.staffRfid) return String(replyData.staffRfid).trim();
+    if (replyData.instrumentRfid) return String(replyData.instrumentRfid).trim();
     if (replyData.cardId) return String(replyData.cardId).trim();
     if (replyData.id) return String(replyData.id).trim();
     if (replyData.epc) return String(replyData.epc).trim();
@@ -187,59 +189,74 @@ function extractRfidFromReply(replyData) {
 
 async function scanRfidViaMqtt() {
   if (isScanning.value) return;
+
   isScanning.value = true;
-  scanFeedback.value = null;
+  scanFeedback.value = {
+    error: false,
+    message: 'Scanner waiting: Please tap staff badge / RFID tag on reader...'
+  };
 
   try {
     const res = await fetch(`${apiBase.value}/mqtt/request`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        command: 'read_rfid',
-        scanner_type: 'LF',
-        timeout_ms: 15000
+        topic: 'instrument/device/scanner/command',
+        payload: {
+          action: 'SCAN_USER'
+        },
+        timeout: 15000
       })
     });
 
     const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.message || 'Scanner request failed');
-    }
+    if (res.ok && data.success) {
+      const scannedRfid = extractRfidFromReply(data.data);
+      if (scannedRfid) {
+        form.value.rfid = scannedRfid;
 
-    const scannedRfid = extractRfidFromReply(data.reply);
+        // Auto-save/register unknown UID into the database
+        const rawCardType = typeof data.data === 'object' ? data.data?.cardType : null;
+        const cardType = (rawCardType === 'HF' || rawCardType === 'LF') ? rawCardType : 'LF';
 
-    if (scannedRfid) {
-      form.value.rfid = scannedRfid;
-      scanFeedback.value = {
-        error: false,
-        message: `Scanned badge RFID: ${scannedRfid}`
-      };
+        try {
+          await fetch(`${apiBase.value}/rfids`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: scannedRfid,
+              type: cardType
+            })
+          });
+          await rfidSelectRef.value?.fetchTags();
+        } catch (regErr) {
+          console.warn('Auto-register RFID in DB warning:', regErr);
+        }
 
-      try {
-        await fetch(`${apiBase.value}/rfids`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: scannedRfid, type: 'LF' })
-        });
-      } catch (err) {
-        console.warn('Auto-registering scanned RFID failed:', err);
-      }
-
-      if (rfidSelectRef.value && typeof rfidSelectRef.value.loadRfids === 'function') {
-        rfidSelectRef.value.loadRfids();
+        scanFeedback.value = {
+          error: false,
+          message: `Scanned & saved ${cardType} tag: ${scannedRfid}`
+        };
+        showToast(`RFID scanned: ${scannedRfid} (${cardType})`);
+      } else {
+        const msg = (typeof data.data === 'object' && data.data?.message)
+          ? data.data.message
+          : 'No RFID tag data returned from device';
+        scanFeedback.value = { error: true, message: msg };
+        showToast(msg, 'error');
       }
     } else {
-      scanFeedback.value = {
-        error: true,
-        message: 'No RFID returned from scanner. Please try again.'
-      };
+      const errMsg = data.error || data.message || (res.status === 504 ? 'Scan timed out: No RFID badge tapped within 15s' : 'MQTT scan failed');
+      scanFeedback.value = { error: true, message: errMsg };
+      showToast(errMsg, 'error');
     }
   } catch (err) {
-    scanFeedback.value = {
-      error: true,
-      message: err.message || 'Failed to scan RFID via MQTT'
-    };
+    const errMsg = 'Failed to communicate with MQTT API';
+    scanFeedback.value = { error: true, message: errMsg };
+    showToast(errMsg, 'error');
   } finally {
     isScanning.value = false;
   }
