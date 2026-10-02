@@ -252,6 +252,11 @@ Interactive API documentation and schema explorer is available at **`http://loca
 
 | Method | Endpoint | Description |
 |---|---|---|
+| **Authentication & RBAC** | | *(Bearer Token Auth via JWT)* |
+| `POST` | `/auth/login` | Log in with email & password to receive a JWT bearer token |
+| `GET` | `/auth/me` | Retrieve profile and role of authenticated user |
+| `POST` | `/auth/change-password` | Update password for authenticated user |
+| `POST` | `/auth/logout` | Sign out of session |
 | **System & Dashboard** | | |
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |

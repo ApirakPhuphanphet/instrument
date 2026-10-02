@@ -39,6 +39,7 @@
       </button>
 
       <button
+        v-if="isAdmin"
         class="sub-tab-btn"
         :class="{ active: currentTab === 'retired' }"
         @click="switchTab('retired')"
@@ -146,7 +147,7 @@
           </button>
 
           <!-- New Group Button -->
-          <button class="btn" title="Create a new instrument group" @click="openCreateGroup">
+          <button v-if="isAdmin" class="btn" title="Create a new instrument group" @click="openCreateGroup">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="3" width="7" height="7"/>
               <rect x="14" y="3" width="7" height="7"/>
@@ -157,7 +158,7 @@
           </button>
 
           <!-- Add Unit Button -->
-          <button class="btn btn-primary" @click="openCreateUnit('')">
+          <button v-if="isAdmin" class="btn btn-primary" @click="openCreateUnit('')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -184,9 +185,9 @@
           No Instrument Groups Found
         </div>
         <p style="font-size: 12.5px; color: var(--text3); margin-bottom: 16px;">
-          Create an instrument group to start organizing your physical instruments.
+          {{ isAdmin ? 'Create an instrument group to start organizing your physical instruments.' : 'No active instruments currently registered in the catalog.' }}
         </p>
-        <button class="btn btn-primary" @click="openCreateGroup">
+        <button v-if="isAdmin" class="btn btn-primary" @click="openCreateGroup">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -202,6 +203,7 @@
           :key="group.id"
           :group="group"
           :is-expanded="expandedGroupIds.has(group.id)"
+          :is-admin="isAdmin"
           @toggle-expand="toggleGroupExpand"
           @add-unit="openCreateUnit"
           @edit-group="openEditGroup"
@@ -220,6 +222,7 @@
           v-for="group in filteredGroups"
           :key="group.id"
           :group="group"
+          :is-admin="isAdmin"
           @switch-to-table-and-expand="switchToTableAndExpand"
           @add-unit="openCreateUnit"
           @edit-group="openEditGroup"
@@ -292,6 +295,7 @@ import RetiredTab from '@/components/instruments/RetiredTab.vue';
 
 import { useApi } from '@/composables/useApi';
 import { useToast } from '@/composables/useToast';
+import { useAuth } from '@/composables/useAuth';
 
 const props = defineProps({
   initialTab: { type: String, default: 'list' }
@@ -301,6 +305,7 @@ const emit = defineEmits(['stats-updated']);
 
 const { apiBase } = useApi();
 const { showToast } = useToast();
+const { isAdmin } = useAuth();
 
 const currentTab = ref(props.initialTab || 'list');
 const viewMode = ref('table');
@@ -341,6 +346,10 @@ function onSearchInput() {
 }
 
 function switchTab(tab) {
+  if (!isAdmin.value && tab === 'retired') {
+    currentTab.value = 'list';
+    return;
+  }
   currentTab.value = tab;
   if (tab === 'list') {
     loadGroups();

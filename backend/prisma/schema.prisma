@@ -52,13 +52,24 @@ model Rfid {
   @@map("rfid")
 }
 
+enum Role {
+  ADMIN
+  USER
+
+  @@map("user_role")
+}
+
 model User {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String
-  rfid      String?
-  createdAt DateTime  @default(now()) @map("createdat") @db.Timestamptz
-  updatedAt DateTime  @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
-  deletedAt DateTime? @map("deletedat") @db.Timestamptz
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  email              String?       @unique
+  passwordHash       String?       @map("password_hash")
+  role               Role          @default(USER)
+  mustChangePassword Boolean       @default(false) @map("must_change_password")
+  rfid               String?
+  createdAt          DateTime      @default(now()) @map("createdat") @db.Timestamptz
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updatedat") @db.Timestamptz
+  deletedAt          DateTime?     @map("deletedat") @db.Timestamptz
 
   rfidRef      Rfid?         @relation(fields: [rfid], references: [id], onDelete: SetNull)
   transactions Transaction[]

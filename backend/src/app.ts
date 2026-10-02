@@ -17,6 +17,8 @@ import multipart from '@fastify/multipart';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
+import { authPlugin } from './lib/auth.js';
+import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { transactionRoutes } from './routes/transaction.js';
 import { rfidRoutes } from './routes/rfid.js';
@@ -54,12 +56,25 @@ export async function buildApp() {
     }
   });
 
+  // Register authentication & JWT plugin
+  await app.register(authPlugin);
+
   await app.register(swagger, {
     openapi: {
       info: {
         title: 'Instrument API',
         description: 'API documentation for instrument and RFID tracking system',
         version: '1.0.0'
+      },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description: 'Enter JWT bearer token received from POST /auth/login'
+          }
+        }
       },
       servers: []
     },
@@ -70,6 +85,7 @@ export async function buildApp() {
     routePrefix: '/docs'
   });
 
+  await app.register(authRoutes);
   await app.register(healthRoutes);
   await app.register(transactionRoutes);
   await app.register(rfidRoutes);

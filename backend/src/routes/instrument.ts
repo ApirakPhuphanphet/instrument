@@ -16,11 +16,13 @@ import {
 } from '../schemas/instrument.schema.js';
 
 export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  // POST /instruments - Create a new instrument
+  // POST /instruments - Create a new instrument (Admin only)
   fastify.post('/instruments', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Instruments'],
-      summary: 'Create a new instrument',
+      summary: 'Create a new instrument (Admin only)',
+      security: [{ bearerAuth: [] }],
       body: CreateInstrumentSchema,
       response: {
         201: z.object({
@@ -28,6 +30,8 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
           data: InstrumentResponseSchema
         }),
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         409: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
@@ -51,11 +55,13 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // GET /instruments - List instruments with filters and pagination
+  // GET /instruments - List instruments with filters and pagination (Authenticated)
   fastify.get('/instruments', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Instruments'],
       summary: 'List instruments with search, status filtering, and pagination',
+      security: [{ bearerAuth: [] }],
       querystring: InstrumentQuerySchema,
       response: {
         200: z.object({
@@ -68,6 +74,7 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
             totalPages: z.number()
           })
         }),
+        401: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }
@@ -87,17 +94,20 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // GET /instruments/:id - Get an instrument by ID
+  // GET /instruments/:id - Get an instrument by ID (Authenticated)
   fastify.get('/instruments/:id', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Instruments'],
       summary: 'Get instrument by UUID',
+      security: [{ bearerAuth: [] }],
       params: InstrumentParamsSchema,
       response: {
         200: z.object({
           message: z.string(),
           data: InstrumentResponseSchema
         }),
+        401: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
@@ -119,11 +129,13 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // PATCH /instruments/:id - Update instrument details
+  // PATCH /instruments/:id - Update instrument details (Admin only)
   fastify.patch('/instruments/:id', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Instruments'],
-      summary: 'Update instrument by UUID',
+      summary: 'Update instrument by UUID (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: InstrumentParamsSchema,
       body: UpdateInstrumentSchema,
       response: {
@@ -132,6 +144,8 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
           data: InstrumentResponseSchema
         }),
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         409: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
@@ -157,11 +171,13 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // DELETE /instruments/:id - Soft-delete or permanently delete an instrument
+  // DELETE /instruments/:id - Soft-delete or permanently delete an instrument (Admin only)
   fastify.delete('/instruments/:id', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Instruments'],
-      summary: 'Delete instrument by UUID (soft delete by default)',
+      summary: 'Delete instrument by UUID (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: InstrumentParamsSchema,
       querystring: DeleteInstrumentQuerySchema,
       response: {
@@ -170,6 +186,8 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
           data: z.unknown().optional()
         }),
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
@@ -194,11 +212,13 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // POST /instruments/:id/restore - Restore a soft-deleted instrument
+  // POST /instruments/:id/restore - Restore a soft-deleted instrument (Admin only)
   fastify.post('/instruments/:id/restore', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Instruments'],
-      summary: 'Restore a soft-deleted instrument',
+      summary: 'Restore a soft-deleted instrument (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: InstrumentParamsSchema,
       response: {
         200: z.object({
@@ -206,6 +226,8 @@ export const instrumentRoutes: FastifyPluginAsyncZod = async (fastify) => {
           data: InstrumentResponseSchema
         }),
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         409: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })

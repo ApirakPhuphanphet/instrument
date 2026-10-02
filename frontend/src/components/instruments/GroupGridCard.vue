@@ -87,9 +87,9 @@
     <!-- Card Footer Actions -->
     <div style="border-top: 1px solid var(--border-muted); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
       <button class="btn btn-sm" @click="emit('switch-to-table-and-expand', group.id)">
-        Manage Units ({{ activeUnits.length }})
+        {{ isAdmin ? 'Manage Units' : 'View Units' }} ({{ activeUnits.length }})
       </button>
-      <div style="display: flex; gap: 6px;">
+      <div v-if="isAdmin" style="display: flex; gap: 6px;">
         <button class="btn btn-sm btn-primary" title="Add Unit" @click="emit('add-unit', group.is_standalone ? '' : group.id)">
           + Unit
         </button>
@@ -106,7 +106,8 @@ import { computed } from 'vue';
 import { useApi } from '@/composables/useApi';
 
 const props = defineProps({
-  group: { type: Object, required: true }
+  group: { type: Object, required: true },
+  isAdmin: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['switch-to-table-and-expand', 'add-unit', 'edit-group']);

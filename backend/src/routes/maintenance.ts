@@ -18,14 +18,17 @@ import {
 } from '../schemas/maintenance.schema.js';
 
 export const maintenanceRoutes: FastifyPluginAsyncZod = async (fastify) => {
-  // GET /maintenance - list maintenance records with pagination and filters
+  // GET /maintenance - list maintenance records with pagination and filters (Authenticated)
   fastify.get('/maintenance', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Maintenance'],
       summary: 'List maintenance records with pagination and filtering',
+      security: [{ bearerAuth: [] }],
       querystring: MaintenanceQuerySchema,
       response: {
         200: MaintenanceListResponseSchema,
+        401: z.object({ message: z.string() }),
         500: z.object({ message: z.string(), error: z.string().optional() })
       }
     }
@@ -46,15 +49,19 @@ export const maintenanceRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // POST /maintenance/send - send instrument to maintenance
+  // POST /maintenance/send - send instrument to maintenance (Admin only)
   fastify.post('/maintenance/send', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Maintenance'],
-      summary: 'Send an instrument to maintenance',
+      summary: 'Send an instrument to maintenance (Admin only)',
+      security: [{ bearerAuth: [] }],
       body: SendMaintenanceSchema,
       response: {
         201: MaintenanceResponseSchema,
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         409: z.object({ message: z.string() }),
         500: z.object({ message: z.string(), error: z.string().optional() })
@@ -80,16 +87,20 @@ export const maintenanceRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // POST /maintenance/:id/return - return instrument from maintenance
+  // POST /maintenance/:id/return - return instrument from maintenance (Admin only)
   fastify.post('/maintenance/:id/return', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['Maintenance'],
-      summary: 'Bring back / return an instrument from maintenance',
+      summary: 'Bring back / return an instrument from maintenance (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: MaintenanceParamsSchema,
       body: ReturnMaintenanceSchema,
       response: {
         200: MaintenanceResponseSchema,
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string(), error: z.string().optional() })
       }
@@ -115,14 +126,17 @@ export const maintenanceRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // GET /maintenance/:id - get maintenance record by ID
+  // GET /maintenance/:id - get maintenance record by ID (Authenticated)
   fastify.get('/maintenance/:id', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Maintenance'],
       summary: 'Get maintenance record by ID',
+      security: [{ bearerAuth: [] }],
       params: MaintenanceParamsSchema,
       response: {
         200: MaintenanceResponseSchema,
+        401: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string(), error: z.string().optional() })
       }

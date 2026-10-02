@@ -12,12 +12,15 @@ import {
 
 export const transactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.get('/transactions', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Transactions'],
       summary: 'List transactions with type filter and pagination',
+      security: [{ bearerAuth: [] }],
       querystring: TransactionQuerySchema,
       response: {
         200: TransactionListResponseSchema,
+        401: z.object({ message: z.string() }),
         500: z.object({ message: z.string(), error: z.string().optional() })
       }
     }
@@ -29,6 +32,11 @@ export const transactionRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const where: any = {
         deletedAt: null
       };
+
+      // Restrict standard users to only their own transaction records
+      if (request.user?.role === 'USER') {
+        where.user_id = request.user.id;
+      }
 
       if (type) {
         where.type = type;

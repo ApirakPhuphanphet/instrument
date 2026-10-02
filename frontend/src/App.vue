@@ -36,6 +36,7 @@
         </div>
 
         <div
+          v-if="isAdmin"
           class="nav-item"
           :class="{ active: currentPage === 'users' }"
           @click="navigate('users')"
@@ -45,6 +46,7 @@
         </div>
 
         <div
+          v-if="isAdmin"
           class="nav-item"
           :class="{ active: currentPage === 'rfids' }"
           @click="navigate('rfids')"
@@ -56,9 +58,62 @@
         </div>
       </nav>
 
+      <!-- User Profile Card -->
+      <div v-if="isAuthenticated && user" style="padding: 10px 14px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+            <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              {{ (user.name || 'U').slice(0, 2).toUpperCase() }}
+            </div>
+            <div style="min-width: 0;">
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ user.name }}
+              </div>
+              <div style="font-size: 9.5px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                {{ user.email || 'No email' }}
+              </div>
+            </div>
+          </div>
+          <span
+            class="badge"
+            :class="isAdmin ? 'badge-available' : 'badge-borrowed'"
+            style="font-size: 9px; font-weight: 700; text-transform: uppercase;"
+          >
+            {{ user.role }}
+          </span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button
+            class="btn btn-sm"
+            style="flex: 1; font-size: 10px; padding: 2px 4px; justify-content: center;"
+            title="Change your password"
+            @click="showChangePasswordModal = true"
+          >
+            Password
+          </button>
+          <button
+            class="btn btn-sm btn-danger"
+            style="flex: 1; font-size: 10px; padding: 2px 4px; justify-content: center;"
+            title="Sign out of ES-Hub"
+            @click="logout"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+      <div v-else style="padding: 10px 14px; border-top: 1px solid var(--border);">
+        <button
+          class="btn btn-primary btn-sm"
+          style="width: 100%; justify-content: center;"
+          @click="showLoginModal = true"
+        >
+          Sign In
+        </button>
+      </div>
+
       <!-- Sidebar Bottom Status -->
-      <div style="padding: 12px 14px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text3);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+      <div style="padding: 10px 14px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--text3);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
           <span>API Server</span>
           <span
             style="display: inline-flex; align-items: center; gap: 5px; font-weight: 500;"
@@ -143,6 +198,9 @@
     </div>
 
     <!-- Modals & Global Overlays -->
+    <LoginModal />
+    <ChangePasswordModal />
+
     <ApiConfigModal
       v-model="apiConfigOpen"
       @saved="refreshAll"
@@ -162,9 +220,13 @@ import RfidView from '@/views/RfidView.vue';
 import ApiConfigModal from '@/components/common/ApiConfigModal.vue';
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue';
 import ToastContainer from '@/components/common/ToastContainer.vue';
+import LoginModal from '@/components/auth/LoginModal.vue';
+import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
 import { useApi } from '@/composables/useApi';
+import { useAuth } from '@/composables/useAuth';
 
 const { apiBase, apiStatus, checkHealth } = useApi();
+const { user, isAuthenticated, isAdmin, showLoginModal, showChangePasswordModal, logout, fetchMe } = useAuth();
 
 const currentPage = ref('dashboard');
 const globalSearchText = ref('');
@@ -211,6 +273,10 @@ const hostDisplay = computed(() => {
 });
 
 function navigate(page) {
+  if (!isAdmin.value && (page === 'users' || page === 'rfids')) {
+    currentPage.value = 'dashboard';
+    return;
+  }
   currentPage.value = page;
   if (page === 'dashboard' && dashboardViewRef.value) {
     dashboardViewRef.value.loadBorrowingStats();
@@ -220,6 +286,10 @@ function navigate(page) {
 }
 
 function onDashboardNavigate(page, subTab, searchTerm) {
+  if (!isAdmin.value && (page === 'users' || page === 'rfids')) {
+    currentPage.value = 'dashboard';
+    return;
+  }
   currentPage.value = page;
   if (page === 'instruments' && instrumentsViewRef.value) {
     if (subTab) {
@@ -240,6 +310,7 @@ function onNavigateOverdue() {
 }
 
 function openAddInstrument() {
+  if (!isAdmin.value) return;
   currentPage.value = 'instruments';
   if (instrumentsViewRef.value) {
     instrumentsViewRef.value.openCreateUnit();
@@ -247,6 +318,7 @@ function openAddInstrument() {
 }
 
 function openAddUser() {
+  if (!isAdmin.value) return;
   currentPage.value = 'users';
   if (usersViewRef.value) {
     usersViewRef.value.openCreateUser();
@@ -298,7 +370,7 @@ function refreshAll() {
   if (rfidViewRef.value) rfidViewRef.value.loadRfids();
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Restore theme
   const savedTheme = localStorage.getItem('es_hub_theme');
   if (savedTheme) {
@@ -310,5 +382,8 @@ onMounted(() => {
   // Periodic health check
   checkHealth();
   setInterval(checkHealth, 20000);
+
+  // Authenticate user session
+  await fetchMe();
 });
 </script>

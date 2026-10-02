@@ -91,7 +91,7 @@
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px;" @click.stop>
+        <div v-if="isAdmin" style="display: flex; align-items: center; gap: 6px;" @click.stop>
           <button
             class="btn btn-sm btn-primary"
             title="Add physical unit"
@@ -136,6 +136,7 @@
           Physical Units ({{ activeUnits.length }})
         </div>
         <button
+          v-if="isAdmin"
           class="btn btn-sm"
           style="font-size: 11px; padding: 3px 8px;"
           @click="emit('add-unit', group.is_standalone ? '' : group.id)"
@@ -154,13 +155,13 @@
             <th>RFID Tag (HF)</th>
             <th>UUID</th>
             <th>Updated</th>
-            <th style="text-align: right;">Actions</th>
+            <th v-if="isAdmin" style="text-align: right;">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="activeUnits.length === 0">
-            <td colspan="8" style="text-align: center; color: var(--text3); padding: 20px;">
-              No active units registered in this group yet. Click <strong>+ Add Unit</strong> to register one.
+            <td :colspan="isAdmin ? 8 : 7" style="text-align: center; color: var(--text3); padding: 20px;">
+              No active units registered in this group yet. <span v-if="isAdmin">Click <strong>+ Add Unit</strong> to register one.</span>
             </td>
           </tr>
           <tr
@@ -247,7 +248,7 @@
             <td style="font-size: 11px; color: var(--text3);">
               {{ formatDate(unit.updatedAt) }}
             </td>
-            <td style="text-align: right;">
+            <td v-if="isAdmin" style="text-align: right;">
               <div style="display: inline-flex; gap: 6px;">
                 <template v-if="!unit.deletedAt">
                   <button
@@ -287,7 +288,8 @@ import { useApi } from '@/composables/useApi';
 
 const props = defineProps({
   group: { type: Object, required: true },
-  isExpanded: { type: Boolean, default: false }
+  isExpanded: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false }
 });
 
 const emit = defineEmits([

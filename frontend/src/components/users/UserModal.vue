@@ -4,7 +4,8 @@
     :title="isEdit ? 'Edit User' : 'Register New User'"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <!-- Name -->
       <div>
         <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
           Full Name <span style="color: var(--red);">*</span>
@@ -12,14 +13,59 @@
         <input
           v-model="form.name"
           placeholder="e.g. Alice Smith, John Doe"
-          style="width: 100%;"
+          style="width: 100%; box-sizing: border-box;"
         />
       </div>
 
+      <!-- Email & Role Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+            Email Address (for Login)
+          </label>
+          <input
+            v-model="form.email"
+            type="email"
+            placeholder="e.g. user@eshub.local"
+            style="width: 100%; box-sizing: border-box;"
+          />
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+            System Role
+          </label>
+          <select
+            v-model="form.role"
+            style="width: 100%; box-sizing: border-box; height: 35px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); padding: 0 10px;"
+          >
+            <option value="USER">USER (Borrower / Member)</option>
+            <option value="ADMIN">ADMIN (Full Access)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Password / Reset Password -->
+      <div>
+        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--text2); margin-bottom: 5px;">
+          {{ isEdit ? 'Reset Password (optional)' : 'Initial Password (optional)' }}
+        </label>
+        <input
+          v-model="form.password"
+          type="text"
+          :placeholder="isEdit ? 'Leave blank to keep existing password' : 'Leave blank for default: User1234!'"
+          style="width: 100%; box-sizing: border-box;"
+        />
+        <div style="font-size: 11px; color: var(--text3); margin-top: 4px;">
+          {{ isEdit ? 'Enter a new password to reset it for the user.' : 'If email is provided without password, default User1234! will be assigned.' }}
+        </div>
+      </div>
+
+      <!-- RFID Section -->
       <div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
           <label style="font-size: 11.5px; font-weight: 600; color: var(--text2); margin: 0;">
-            Assigned RFID Tag (Staff Badge)
+            Assigned RFID Tag (Staff / Borrower Badge)
           </label>
           <button
             type="button"
@@ -103,6 +149,9 @@ const rfidSelectRef = ref(null);
 const form = ref({
   id: '',
   name: '',
+  email: '',
+  role: 'USER',
+  password: '',
   rfid: ''
 });
 
@@ -138,74 +187,59 @@ function extractRfidFromReply(replyData) {
 
 async function scanRfidViaMqtt() {
   if (isScanning.value) return;
-
   isScanning.value = true;
-  scanFeedback.value = {
-    error: false,
-    message: 'Scanner waiting: Please tap staff badge / RFID tag on reader...'
-  };
+  scanFeedback.value = null;
 
   try {
     const res = await fetch(`${apiBase.value}/mqtt/request`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        topic: 'instrument/device/scanner/command',
-        payload: {
-          action: 'SCAN_USER'
-        },
-        timeout: 15000
+        command: 'read_rfid',
+        scanner_type: 'LF',
+        timeout_ms: 15000
       })
     });
 
     const data = await res.json();
 
-    if (res.ok && data.success) {
-      const scannedRfid = extractRfidFromReply(data.data);
-      if (scannedRfid) {
-        form.value.rfid = scannedRfid;
+    if (!res.ok) {
+      throw new Error(data.message || 'Scanner request failed');
+    }
 
-        // Auto-save/register unknown UID into the database
-        const rawCardType = typeof data.data === 'object' ? data.data?.cardType : null;
-        const cardType = (rawCardType === 'HF' || rawCardType === 'LF') ? rawCardType : 'LF';
+    const scannedRfid = extractRfidFromReply(data.reply);
 
-        try {
-          await fetch(`${apiBase.value}/rfids`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: scannedRfid,
-              type: cardType
-            })
-          });
-          await rfidSelectRef.value?.fetchTags();
-        } catch (regErr) {
-          console.warn('Auto-register RFID in DB warning:', regErr);
-        }
+    if (scannedRfid) {
+      form.value.rfid = scannedRfid;
+      scanFeedback.value = {
+        error: false,
+        message: `Scanned badge RFID: ${scannedRfid}`
+      };
 
-        scanFeedback.value = {
-          error: false,
-          message: `Scanned & saved ${cardType} tag: ${scannedRfid}`
-        };
-        showToast(`RFID scanned: ${scannedRfid} (${cardType})`);
-      } else {
-        const msg = (typeof data.data === 'object' && data.data?.message)
-          ? data.data.message
-          : 'No RFID tag data returned from device';
-        scanFeedback.value = { error: true, message: msg };
-        showToast(msg, 'error');
+      try {
+        await fetch(`${apiBase.value}/rfids`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: scannedRfid, type: 'LF' })
+        });
+      } catch (err) {
+        console.warn('Auto-registering scanned RFID failed:', err);
+      }
+
+      if (rfidSelectRef.value && typeof rfidSelectRef.value.loadRfids === 'function') {
+        rfidSelectRef.value.loadRfids();
       }
     } else {
-      const errMsg = data.error || data.message || (res.status === 504 ? 'Scan timed out: No RFID badge tapped within 15s' : 'MQTT scan failed');
-      scanFeedback.value = { error: true, message: errMsg };
-      showToast(errMsg, 'error');
+      scanFeedback.value = {
+        error: true,
+        message: 'No RFID returned from scanner. Please try again.'
+      };
     }
   } catch (err) {
-    const errMsg = 'Failed to communicate with MQTT API';
-    scanFeedback.value = { error: true, message: errMsg };
-    showToast(errMsg, 'error');
+    scanFeedback.value = {
+      error: true,
+      message: err.message || 'Failed to scan RFID via MQTT'
+    };
   } finally {
     isScanning.value = false;
   }
@@ -221,6 +255,9 @@ watch(() => props.modelValue, (isOpen) => {
       form.value = {
         id: props.userData.id,
         name: props.userData.name || '',
+        email: props.userData.email || '',
+        role: props.userData.role || 'USER',
+        password: '',
         rfid: props.userData.rfid || ''
       };
     } else {
@@ -228,6 +265,9 @@ watch(() => props.modelValue, (isOpen) => {
       form.value = {
         id: '',
         name: '',
+        email: '',
+        role: 'USER',
+        password: '',
         rfid: ''
       };
     }
@@ -241,8 +281,14 @@ async function save() {
   isSaving.value = true;
   const payload = {
     name,
-    rfid: form.value.rfid.trim() || null
+    email: form.value.email?.trim() || null,
+    role: form.value.role || 'USER',
+    rfid: form.value.rfid?.trim() || null
   };
+
+  if (form.value.password?.trim()) {
+    payload.password = form.value.password.trim();
+  }
 
   try {
     const url = isEdit.value

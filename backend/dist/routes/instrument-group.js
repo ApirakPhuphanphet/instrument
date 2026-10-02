@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { instrumentGroupService, InstrumentGroupServiceError } from '../services/instrument-group.service.js';
 import { CreateInstrumentGroupSchema, UpdateInstrumentGroupSchema, InstrumentGroupParamsSchema, InstrumentGroupQuerySchema, DeleteInstrumentGroupQuerySchema, InstrumentGroupResponseSchema } from '../schemas/instrument-group.schema.js';
 export const instrumentGroupRoutes = async (fastify) => {
-    // POST /instrument-groups - Create a new instrument group
+    // POST /instrument-groups - Create a new instrument group (Admin only)
     fastify.post('/instrument-groups', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Instrument Groups'],
-            summary: 'Create a new instrument group',
+            summary: 'Create a new instrument group (Admin only)',
+            security: [{ bearerAuth: [] }],
             body: CreateInstrumentGroupSchema,
             response: {
                 201: z.object({
@@ -14,6 +16,8 @@ export const instrumentGroupRoutes = async (fastify) => {
                     data: InstrumentGroupResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
         }
@@ -33,11 +37,13 @@ export const instrumentGroupRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // GET /instrument-groups - List instrument groups
+    // GET /instrument-groups - List instrument groups with filters and pagination (Authenticated)
     fastify.get('/instrument-groups', {
+        preHandler: [fastify.authenticate],
         schema: {
             tags: ['Instrument Groups'],
-            summary: 'List instrument groups with stats and nested units',
+            summary: 'List instrument groups with search, filtering, and pagination',
+            security: [{ bearerAuth: [] }],
             querystring: InstrumentGroupQuerySchema,
             response: {
                 200: z.object({
@@ -50,6 +56,7 @@ export const instrumentGroupRoutes = async (fastify) => {
                         totalPages: z.number()
                     })
                 }),
+                401: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
         }
@@ -67,17 +74,20 @@ export const instrumentGroupRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // GET /instrument-groups/:id - Get an instrument group by ID
+    // GET /instrument-groups/:id - Get an instrument group by ID (Authenticated)
     fastify.get('/instrument-groups/:id', {
+        preHandler: [fastify.authenticate],
         schema: {
             tags: ['Instrument Groups'],
             summary: 'Get instrument group by UUID',
+            security: [{ bearerAuth: [] }],
             params: InstrumentGroupParamsSchema,
             response: {
                 200: z.object({
                     message: z.string(),
                     data: InstrumentGroupResponseSchema
                 }),
+                401: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
@@ -99,11 +109,13 @@ export const instrumentGroupRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // PATCH /instrument-groups/:id - Update group details
+    // PATCH /instrument-groups/:id - Update instrument group details (Admin only)
     fastify.patch('/instrument-groups/:id', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Instrument Groups'],
-            summary: 'Update instrument group by UUID',
+            summary: 'Update instrument group by UUID (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: InstrumentGroupParamsSchema,
             body: UpdateInstrumentGroupSchema,
             response: {
@@ -112,6 +124,8 @@ export const instrumentGroupRoutes = async (fastify) => {
                     data: InstrumentGroupResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
@@ -133,11 +147,13 @@ export const instrumentGroupRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // DELETE /instrument-groups/:id - Soft-delete or permanent delete group
+    // DELETE /instrument-groups/:id - Soft-delete or permanently delete an instrument group (Admin only)
     fastify.delete('/instrument-groups/:id', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Instrument Groups'],
-            summary: 'Delete instrument group by UUID',
+            summary: 'Delete instrument group by UUID (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: InstrumentGroupParamsSchema,
             querystring: DeleteInstrumentGroupQuerySchema,
             response: {
@@ -146,6 +162,8 @@ export const instrumentGroupRoutes = async (fastify) => {
                     data: z.unknown().optional()
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
@@ -170,11 +188,13 @@ export const instrumentGroupRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // POST /instrument-groups/:id/restore - Restore a soft-deleted group
+    // POST /instrument-groups/:id/restore - Restore a soft-deleted instrument group (Admin only)
     fastify.post('/instrument-groups/:id/restore', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Instrument Groups'],
-            summary: 'Restore a soft-deleted instrument group',
+            summary: 'Restore a soft-deleted instrument group (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: InstrumentGroupParamsSchema,
             response: {
                 200: z.object({
@@ -182,6 +202,8 @@ export const instrumentGroupRoutes = async (fastify) => {
                     data: InstrumentGroupResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }

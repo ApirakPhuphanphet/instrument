@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { hashPassword } from '../lib/password.js';
 import { CreateUserInput, UpdateUserInput, UserQueryInput } from '../schemas/user.schema.js';
 
 export class UserServiceError extends Error {
@@ -11,12 +12,44 @@ export class UserServiceError extends Error {
   }
 }
 
+const DEFAULT_USER_PASSWORD = 'User1234!';
+
 export class UserService {
   /**
-   * Create a new user with optional RFID assignment.
+   * Create a new user with optional email/password credentials and RFID assignment.
    */
   async createUser(data: CreateUserInput) {
-    const { name, rfid } = data;
+    const { name, email, password, role = 'USER', rfid } = data;
+
+    // Check duplicate email if email provided
+    if (email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email: {
+            equals: email,
+            mode: 'insensitive'
+          },
+          deletedAt: null
+        }
+      });
+
+      if (existingEmail) {
+        throw new UserServiceError(`Email '${email}' is already in use.`, 409);
+      }
+    }
+
+    // Determine password hash and mustChangePassword flag
+    let passwordHash: string | null = null;
+    let mustChangePassword = false;
+
+    if (password) {
+      passwordHash = await hashPassword(password);
+      mustChangePassword = true; // User can change it later
+    } else if (email) {
+      // If email provided without password, provision with default password
+      passwordHash = await hashPassword(DEFAULT_USER_PASSWORD);
+      mustChangePassword = true;
+    }
 
     if (rfid) {
       let rfidRecord = await prisma.rfid.findUnique({
@@ -49,22 +82,30 @@ export class UserService {
       }
     }
 
-    return prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
+        email: email || null,
+        passwordHash,
+        role: role || 'USER',
+        mustChangePassword,
         rfid: rfid || null
       },
       include: {
         rfidRef: true
       }
     });
+
+    // Omit sensitive passwordHash from returned object
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
   }
 
   /**
-   * List users with search, filtering, and pagination.
+   * List users with search, filtering, role filtering, and pagination.
    */
   async getUsers(query: UserQueryInput) {
-    const { search, rfid, includeDeleted, page, limit } = query;
+    const { search, role, rfid, includeDeleted, page, limit } = query;
 
     const where: any = {};
 
@@ -73,10 +114,14 @@ export class UserService {
     }
 
     if (search) {
-      where.name = {
-        contains: search,
-        mode: 'insensitive'
-      };
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (role) {
+      where.role = role;
     }
 
     if (rfid) {
@@ -97,7 +142,16 @@ export class UserService {
         orderBy: {
           createdAt: 'desc'
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          mustChangePassword: true,
+          rfid: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
           rfidRef: true
         }
       })
@@ -120,7 +174,16 @@ export class UserService {
   async getUserById(id: string, includeDeleted = false) {
     const user = await prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        mustChangePassword: true,
+        rfid: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
         rfidRef: true
       }
     });
@@ -152,7 +215,30 @@ export class UserService {
       throw new UserServiceError(`Cannot update deleted user '${id}'. Restore the user first.`, 400);
     }
 
-    const { name, rfid } = data;
+    const { name, email, password, role, mustChangePassword, rfid } = data;
+
+    // Check duplicate email if changed
+    if (email && email !== user.email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email: {
+            equals: email,
+            mode: 'insensitive'
+          },
+          id: { not: id },
+          deletedAt: null
+        }
+      });
+
+      if (existingEmail) {
+        throw new UserServiceError(`Email '${email}' is already in use by another user.`, 409);
+      }
+    }
+
+    let passwordHash: string | undefined = undefined;
+    if (password) {
+      passwordHash = await hashPassword(password);
+    }
 
     if (rfid !== undefined && rfid !== null && rfid !== user.rfid) {
       let rfidRecord = await prisma.rfid.findUnique({
@@ -186,17 +272,32 @@ export class UserService {
       }
     }
 
-    return prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id },
       data: {
         ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(passwordHash !== undefined && { passwordHash, mustChangePassword: true }),
+        ...(role !== undefined && { role }),
+        ...(mustChangePassword !== undefined && { mustChangePassword }),
         ...(rfid !== undefined && { rfid }),
         updatedAt: new Date()
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        mustChangePassword: true,
+        rfid: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
         rfidRef: true
       }
     });
+
+    return updated;
   }
 
   /**
@@ -225,9 +326,18 @@ export class UserService {
       where: { id },
       data: {
         deletedAt: new Date(),
-        rfid: null, // Unassign RFID upon soft deletion
+        rfid: null // Unassign RFID upon soft deletion
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        mustChangePassword: true,
+        rfid: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
         rfidRef: true
       }
     });
@@ -272,7 +382,16 @@ export class UserService {
         deletedAt: null,
         updatedAt: new Date()
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        mustChangePassword: true,
+        rfid: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
         rfidRef: true
       }
     });

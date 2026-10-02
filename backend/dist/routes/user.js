@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { userService, UserServiceError } from '../services/user.service.js';
 import { CreateUserSchema, UpdateUserSchema, UserParamsSchema, UserQuerySchema, DeleteUserQuerySchema, UserResponseSchema } from '../schemas/user.schema.js';
 export const userRoutes = async (fastify) => {
-    // POST /users - Create a new user
+    // POST /users - Create a new user (Admin only)
     fastify.post('/users', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Users'],
-            summary: 'Create a new user',
+            summary: 'Create a new user with optional email/password and RFID (Admin only)',
+            security: [{ bearerAuth: [] }],
             body: CreateUserSchema,
             response: {
                 201: z.object({
@@ -14,6 +16,8 @@ export const userRoutes = async (fastify) => {
                     data: UserResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 409: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
@@ -35,11 +39,13 @@ export const userRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // GET /users - List users with filters and pagination
+    // GET /users - List users with filters and pagination (Authenticated users)
     fastify.get('/users', {
+        preHandler: [fastify.authenticate],
         schema: {
             tags: ['Users'],
             summary: 'List users with search, filtering, and pagination',
+            security: [{ bearerAuth: [] }],
             querystring: UserQuerySchema,
             response: {
                 200: z.object({
@@ -52,6 +58,7 @@ export const userRoutes = async (fastify) => {
                         totalPages: z.number()
                     })
                 }),
+                401: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
         }
@@ -69,17 +76,20 @@ export const userRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // GET /users/:id - Get a user by ID
+    // GET /users/:id - Get a user by ID (Authenticated users)
     fastify.get('/users/:id', {
+        preHandler: [fastify.authenticate],
         schema: {
             tags: ['Users'],
             summary: 'Get user by UUID',
+            security: [{ bearerAuth: [] }],
             params: UserParamsSchema,
             response: {
                 200: z.object({
                     message: z.string(),
                     data: UserResponseSchema
                 }),
+                401: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
@@ -101,11 +111,13 @@ export const userRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // PATCH /users/:id - Update user details
+    // PATCH /users/:id - Update user details or reset password (Admin only)
     fastify.patch('/users/:id', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Users'],
-            summary: 'Update user by UUID',
+            summary: 'Update user or reset password by UUID (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: UserParamsSchema,
             body: UpdateUserSchema,
             response: {
@@ -114,6 +126,8 @@ export const userRoutes = async (fastify) => {
                     data: UserResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 409: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
@@ -136,11 +150,13 @@ export const userRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // DELETE /users/:id - Soft-delete or permanently delete a user
+    // DELETE /users/:id - Soft-delete or permanently delete a user (Admin only)
     fastify.delete('/users/:id', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Users'],
-            summary: 'Delete user by UUID (soft delete by default)',
+            summary: 'Delete user by UUID (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: UserParamsSchema,
             querystring: DeleteUserQuerySchema,
             response: {
@@ -149,6 +165,8 @@ export const userRoutes = async (fastify) => {
                     data: z.unknown().optional()
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })
             }
@@ -171,11 +189,13 @@ export const userRoutes = async (fastify) => {
             return reply.status(500).send({ message: 'Internal server error' });
         }
     });
-    // POST /users/:id/restore - Restore a soft-deleted user
+    // POST /users/:id/restore - Restore a soft-deleted user (Admin only)
     fastify.post('/users/:id/restore', {
+        preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
         schema: {
             tags: ['Users'],
-            summary: 'Restore a soft-deleted user',
+            summary: 'Restore a soft-deleted user (Admin only)',
+            security: [{ bearerAuth: [] }],
             params: UserParamsSchema,
             response: {
                 200: z.object({
@@ -183,6 +203,8 @@ export const userRoutes = async (fastify) => {
                     data: UserResponseSchema
                 }),
                 400: z.object({ message: z.string() }),
+                401: z.object({ message: z.string() }),
+                403: z.object({ message: z.string() }),
                 404: z.object({ message: z.string() }),
                 409: z.object({ message: z.string() }),
                 500: z.object({ message: z.string() })

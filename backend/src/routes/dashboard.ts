@@ -12,12 +12,15 @@ import {
 export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
   // GET /dashboard/borrowing-stats - Get borrowing amounts and rates by instrument type (with optional year filter)
   fastify.get('/dashboard/borrowing-stats', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Dashboard'],
       summary: 'Get amount of borrowing of each type of instrument with optional year filter',
+      security: [{ bearerAuth: [] }],
       querystring: DashboardBorrowingStatsQuerySchema,
       response: {
         200: DashboardBorrowingStatsResponseSchema,
+        401: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }
@@ -221,11 +224,14 @@ export const dashboardRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   // GET /dashboard/stats - Overview stats for dashboard cards
   fastify.get('/dashboard/stats', {
+    preHandler: [fastify.authenticate],
     schema: {
       tags: ['Dashboard'],
       summary: 'Get overall dashboard statistics',
+      security: [{ bearerAuth: [] }],
       response: {
         200: DashboardOverviewStatsResponseSchema,
+        401: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }

@@ -695,9 +695,11 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   // GET /rfid/unassigned - Get RFIDs not connected to any active user or instrument
   fastify.get('/rfid/unassigned', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['RFID'],
-      summary: 'Get RFIDs not connected to any active user or instrument',
+      summary: 'Get RFIDs not connected to any active user or instrument (Admin only)',
+      security: [{ bearerAuth: [] }],
       querystring: UnassignedRfidQuerySchema,
       response: {
         200: z.object({
@@ -709,6 +711,8 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
             updatedAt: z.date().or(z.string())
           }))
         }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }
@@ -767,12 +771,16 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   // GET /rfids - List RFIDs with connection to user or instrument, search, filters, pagination, and stats
   fastify.get('/rfids', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['RFID'],
-      summary: 'List RFIDs with user/instrument connection details, search, and statistics',
+      summary: 'List RFIDs with user/instrument connection details, search, and statistics (Admin only)',
+      security: [{ bearerAuth: [] }],
       querystring: ListRfidsQuerySchema,
       response: {
         200: ListRfidsResponseSchema,
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }
@@ -906,11 +914,13 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   });
 
-  // POST /rfids - Register new or update existing RFID tag
+  // POST /rfids - Register new or update existing RFID tag (Admin only)
   fastify.post('/rfids', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['RFID'],
-      summary: 'Register or upsert RFID tag with explicit type (LF or HF)',
+      summary: 'Register or upsert RFID tag with explicit type (LF or HF) (Admin only)',
+      security: [{ bearerAuth: [] }],
       body: CreateRfidSchema,
       response: {
         200: z.object({
@@ -923,6 +933,8 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
           })
         }),
         400: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
     }
@@ -999,15 +1011,19 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
     }
   };
 
-  // DELETE /rfids/:id - Delete RFID tag
+  // DELETE /rfids/:id - Delete RFID tag (Admin only)
   fastify.delete('/rfids/:id', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['RFID'],
-      summary: 'Delete or unlink RFID tag',
+      summary: 'Delete or unlink RFID tag (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: z.object({ id: z.string() }),
       querystring: DeleteRfidQuerySchema,
       response: {
         200: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }
@@ -1018,15 +1034,19 @@ export const rfidRoutes: FastifyPluginAsyncZod = async (fastify) => {
     return handleDeleteRfid(id, query, reply);
   });
 
-  // DELETE /rfid/:id - Alias for /rfids/:id
+  // DELETE /rfid/:id - Alias for /rfids/:id (Admin only)
   fastify.delete('/rfid/:id', {
+    preHandler: [fastify.authenticate, fastify.authorize(['ADMIN'])],
     schema: {
       tags: ['RFID'],
-      summary: 'Delete or unlink RFID tag (alias)',
+      summary: 'Delete or unlink RFID tag (alias) (Admin only)',
+      security: [{ bearerAuth: [] }],
       params: z.object({ id: z.string() }),
       querystring: DeleteRfidQuerySchema,
       response: {
         200: z.object({ message: z.string() }),
+        401: z.object({ message: z.string() }),
+        403: z.object({ message: z.string() }),
         404: z.object({ message: z.string() }),
         500: z.object({ message: z.string() })
       }

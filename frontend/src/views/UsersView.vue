@@ -45,6 +45,7 @@
           <thead>
             <tr>
               <th>User</th>
+              <th>System Role</th>
               <th>Assigned RFID Tag</th>
               <th>UUID</th>
               <th>Status</th>
@@ -54,12 +55,12 @@
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="6" style="text-align: center; color: var(--text3); padding: 28px;">
+              <td colspan="7" style="text-align: center; color: var(--text3); padding: 28px;">
                 Loading users...
               </td>
             </tr>
             <tr v-else-if="usersList.length === 0">
-              <td colspan="6" style="text-align: center; color: var(--text3); padding: 32px;">
+              <td colspan="7" style="text-align: center; color: var(--text3); padding: 32px;">
                 No users found.
               </td>
             </tr>
@@ -78,8 +79,28 @@
                       {{ u.name }}
                       <span v-if="u.deletedAt" style="font-size: 10px; color: var(--red);">[DELETED USER]</span>
                     </div>
+                    <div v-if="u.email" style="font-size: 11px; color: var(--text3);">
+                      {{ u.email }}
+                    </div>
                   </div>
                 </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  :class="u.role === 'ADMIN' ? 'badge-available' : 'badge-borrowed'"
+                  style="font-size: 10px; font-weight: 700;"
+                >
+                  {{ u.role || 'USER' }}
+                </span>
+                <span
+                  v-if="u.mustChangePassword"
+                  class="badge"
+                  style="margin-left: 4px; font-size: 9.5px; background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);"
+                  title="User has not changed their initial/default password"
+                >
+                  Default Pwd
+                </span>
               </td>
               <td>
                 <span
