@@ -22,6 +22,11 @@ The frontend and backend run as **two decoupled, independent services**:
 - [System Architecture](#-system-architecture)
 - [Project Structure](#-project-structure)
 - [Hardware Integration & Workflow](#-hardware-integration--workflow)
+  - [1. Clock Synchronization](#1-clock-synchronization)
+  - [2. Borrowing an Instrument](#2-borrowing-an-instrument)
+  - [3. Returning an Instrument](#3-returning-an-instrument)
+  - [4. MQTT Request-Reply & Remote Hardware Scanning](#4-mqtt-request-reply--remote-hardware-scanning)
+  - [5. RFID Tag Management & Sync](#5-rfid-tag-management--sync)
 - [API Reference](#-api-reference)
 - [Database Schema](#-database-schema)
 - [Getting Started](#-getting-started)
@@ -40,14 +45,27 @@ The frontend and backend run as **two decoupled, independent services**:
 - **Dual-Frequency RFID Tracking**:
   - **LF (125 kHz)**: User / technician identification badges.
   - **HF (13.56 MHz / NFC)**: Instrument-attached identification tags.
+- **MQTT Request-Reply RPC Bridge**:
+  - Bridges asynchronous MQTT pub/sub into synchronous HTTP request-reply cycles.
+  - Generates unique correlation IDs (`requestId`), routes via wildcard topics (`instrument/responses/+`), and features robust timeout handling (HTTP 504).
+- **Remote Hardware RFID Scanning from UI**:
+  - One-click **"Scan RFID (MQTT)"** button in both **Add / Edit User** (`UserModal`) and **Add / Edit Instrument Unit** (`UnitModal`).
+  - Triggers physical scanner hardware (`SCAN_USER` or `SCAN_INSTRUMENT`), awaits badge/tag tap over MQTT, and auto-populates the RFID field.
+- **Auto-Registration of Unknown RFID UIDs**:
+  - Seamlessly registers newly discovered UIDs into the PostgreSQL `Rfid` table with their detected type (`LF` or `HF`).
+  - Eliminates foreign key / 404 errors when onboarding new badges or instrument tags.
 - **Automated Borrow & Return Workflow**:
   - Instant hardware-triggered check-in / check-out (`POST /borrow`, `POST /return`).
   - Automatic status updates (`available` ↔ `borrowed`) and transaction auditing.
   - Server time synchronization via `/time` for reliable timestamping.
 - **Instrument Grouping & Hierarchy**:
   - Hierarchical grouping of identical or related equipment (e.g. multiple units of the same oscilloscope).
+  - Support for both grouped equipment and **Standalone Units** (instruments without a parent group).
   - Real-time aggregated group availability counts (*e.g., 3 total, 2 available, 1 borrowed*).
   - Collapsible accordion interface and grid card view with progress bars.
+- **Borrowing Statistics with Year Filtering**:
+  - Dynamic analytics endpoint (`/dashboard/borrowing-stats`) calculating borrowing counts by instrument type.
+  - Filterable by calendar year with default selection of the current year.
 - **Lifecycle & Status Management**:
   - Full status lifecycle: `available`, `borrowed`, `maintenance`, `lost`, and `retired`.
   - Dedicated **Retired** instruments tab keeping active inventory counts clean while allowing one-click reactivation.
@@ -77,11 +95,13 @@ graph TD
         LF[LF Reader<br/>125 kHz Badges] -->|User Tap| ESP[Controller / ESP32]
         HF[HF Reader<br/>13.56 MHz Tags] -->|Instrument Tap| ESP
         BC[Barcode Scanner] -.->|Optional Scan| ESP
+        ESP <-->|MQTT Pub/Sub<br/>Commands & Replies| BROKER[(MQTT Broker<br/>broker.emqx.io:1883)]
     end
 
     subgraph Backend ["Fastify 5 REST API (:3000)"]
         ESP -->|POST /borrow<br/>POST /return| API[REST API & Validation]
         ESP -->|GET /time<br/>GET /*/load| API
+        API <-->|MqttService<br/>Request-Reply Bridge| BROKER
         API --> V[Zod Validation]
         API --> S[Service Layer]
         S --> P[Prisma ORM 6]
@@ -93,7 +113,8 @@ graph TD
     end
 
     subgraph Frontend ["Vue 3 + Vite SPA (:5173)"]
-        UI[Vue 3 Components] <-->|CORS / Proxy| API
+        UI[Vue 3 Components] <-->|HTTP REST / CORS| API
+        UI -.->|POST /mqtt/request<br/>Scan RFID via MQTT| API
     end
 ```
 
@@ -118,24 +139,35 @@ instrument/
 │   │   ├── lib/
 │   │   │   └── prisma.ts        # Prisma client singleton
 │   │   ├── routes/              # Fastify route controllers with Zod schemas
-│   │   │   ├── health.ts        # GET /health
+│   │   │   ├── health.ts        # GET /health, GET /time
+│   │   │   ├── dashboard.ts     # /dashboard/stats, /dashboard/borrowing-stats
+│   │   │   ├── mqtt.ts          # /mqtt/request, /mqtt/status
 │   │   │   ├── image.ts         # /images/upload, /images/:filename
 │   │   │   ├── instrument.ts    # /instruments (CRUD & restore)
 │   │   │   ├── instrument-group.ts # /instrument-groups (CRUD & stats)
 │   │   │   ├── maintenance.ts   # /maintenance (send, return, list)
-│   │   │   ├── rfid.ts          # /LF, /HF, /time, sync
+│   │   │   ├── rfid.ts          # /LF, /HF, /rfids, /rfid/unassigned, sync
 │   │   │   ├── transaction.ts   # /borrow, /return, /transactions
 │   │   │   └── user.ts          # /users (CRUD & restore)
 │   │   ├── schemas/             # Zod validation schemas
+│   │   │   ├── dashboard.schema.ts
+│   │   │   ├── mqtt.schema.ts
+│   │   │   ├── instrument.schema.ts
+│   │   │   ├── instrument-group.schema.ts
+│   │   │   ├── maintenance.schema.ts
+│   │   │   ├── rfid.schema.ts
+│   │   │   ├── transaction.schema.ts
+│   │   │   └── user.schema.ts
 │   │   └── services/            # Core business logic layer
+│   │       ├── auth.service.ts
 │   │       ├── image.service.ts
 │   │       ├── instrument.service.ts
 │   │       ├── instrument-group.service.ts
 │   │       ├── maintenance.service.ts
-│   │       ├── rfid.service.ts
+│   │       ├── mqtt.service.ts  # MQTT connection, correlation & RPC bridge
 │   │       └── user.service.ts
 │   ├── uploads/                 # Storage for uploaded instrument photos
-│   ├── package.json             # Backend dependencies (Fastify, Prisma, Zod)
+│   ├── package.json             # Backend dependencies (Fastify, Prisma, Zod, MQTT)
 │   ├── tsconfig.json
 │   └── openapi.json             # Generated OpenAPI v3 specification
 │
@@ -230,7 +262,49 @@ Content-Type: application/json
 1. Creates a transaction log (`type: "return"`).
 2. Automatically transitions instrument status back to `available`.
 
-### 4. RFID Tag Management & Sync
+### 4. MQTT Request-Reply & Remote Hardware Scanning
+The platform features a synchronous request-reply RPC bridge over MQTT. Frontend modals trigger physical scanner hardware commands on demand and await badge or equipment tag taps in real-time.
+
+```text
+Frontend (HTTP POST) ──> Fastify Backend ──> MQTT Broker (EMQX) ──> ESP32 Hardware Scanner
+                                                                            │ (Badge Tap)
+Frontend (HTTP 200)  <── Fastify Backend <── MQTT Broker (EMQX) <───────────┘
+```
+
+#### Request Payload:
+```http
+POST /mqtt/request
+Content-Type: application/json
+
+{
+  "topic": "instrument/device/scanner/command",
+  "payload": {
+    "action": "SCAN_USER"
+  },
+  "timeout": 15000
+}
+```
+*(Use `"action": "SCAN_INSTRUMENT"` when registering or editing equipment units).*
+
+#### ESP32 Hardware Reply:
+The scanner reads the RFID tag and publishes a correlated response back to the designated response topic (default `instrument/responses/<requestId>`):
+```json
+{
+  "status": "SUCCESS",
+  "action": "SCAN_USER",
+  "device": "ESP32",
+  "cardType": "HF",
+  "uid": "04A1B2C3",
+  "uidLen": 4
+}
+```
+
+#### Auto-Registration of Unknown UIDs:
+When an unknown badge or equipment tag is scanned:
+1. The frontend modal immediately registers the UID via `POST /rfids` using the detected card type (`LF` or `HF`).
+2. Even if an unregistered UID is directly submitted via `POST /users` or `POST /instruments`, the backend service layer auto-creates the record in the `Rfid` table to prevent foreign key errors.
+
+### 5. RFID Tag Management & Sync
 - `POST /staff/check` / `GET /staff/check`: Validate staff membership by RFID tag (accepts any RFID tag, LF or HF).
 - `POST /instrument/check` / `GET /instrument/check`: Validate physical instrument unit by RFID tag (accepts any RFID tag, LF or HF).
 - `GET /staff/load?timestamp=<unix>`: Synchronize active staff RFID tags (LF or HF) updated since timestamp to local hardware cache.
@@ -261,8 +335,11 @@ Interactive API documentation and schema explorer is available at **`http://loca
 | `GET` | `/health` | Healthcheck for server & PostgreSQL connection |
 | `GET` | `/time` | Current server ISO timestamp and Unix epoch |
 | `GET` | `/docs` | Interactive Swagger API documentation |
-| `GET` | `/dashboard/borrowing-stats` | Aggregated borrowing statistics by instrument type (active loans, historical borrow transactions, borrow rate, summary) |
+| `GET` | `/dashboard/borrowing-stats` | Aggregated borrowing statistics by instrument type with optional `?year=YYYY` filter (defaults to current year) |
 | `GET` | `/dashboard/stats` | System-wide overview counters (total, available, borrowed, maintenance, overdue, users, groups, rfids) |
+| **MQTT Remote RPC & Hardware Bridge** | | |
+| `POST` | `/mqtt/request` | Publish MQTT command and synchronously await correlated reply (`topic`, `payload`, `replyTopic`, `timeout`) |
+| `GET` | `/mqtt/status` | Check MQTT client connectivity, broker URL, client ID, and active pending request queue |
 | **RFID Management & Hardware Sync** | | |
 | `GET` | `/rfids` | List RFID tags with user/instrument connection details, search, filters, and stats |
 | `POST` | `/rfids` | Register or update RFID tag (`id`, `type`) |
@@ -352,10 +429,15 @@ All tables implement soft-delete support (`deletedAt`) and timezone-aware timest
    ```bash
    cp .env.example .env
    ```
-   Edit `backend/.env` with your PostgreSQL database credentials:
+   Edit `backend/.env` with your PostgreSQL database credentials and MQTT settings:
    ```env
    DATABASE_URL=postgresql://postgres:password@localhost:5432/coop
    PORT=3000
+
+   # MQTT Broker Configuration (Free Public Broker: EMQX)
+   MQTT_BROKER_URL=mqtt://broker.emqx.io:1883
+   MQTT_CLIENT_ID_PREFIX=instrument_backend_
+   MQTT_DEFAULT_TIMEOUT_MS=5000
    ```
 
 3. **Generate Prisma Client & Sync Database:**
@@ -446,13 +528,17 @@ npm run frontend:preview
 Access the web interface at **`http://localhost:5173/`**.
 
 ### Key Modules:
-- **Dashboard**: High-level counters for total instruments, units available right now, units under maintenance, and registered users. Quick navigation cards and shortcut buttons.
+- **Dashboard**:
+  - High-level inventory counters (total units, available, borrowed, maintenance, overdue, users, groups, RFID tags).
+  - **Borrowing Statistics**: Borrowing counts by instrument type filterable by calendar year (defaulting to the current year).
+  - Quick navigation shortcuts and status overview.
 - **Instruments Management**:
-  - **All Instruments Tab**: Accordion view grouped by model/brand with real-time availability ratios. Expand to view individual units with barcodes, RFID tags, and status badges. Switchable to Grid View with visual color-coded progress bars.
+  - **All Instruments Tab**: Accordion view grouped by model/brand with real-time availability ratios, plus a dedicated **Standalone Units** section. Expand to view individual units with barcodes, RFID tags, and status badges. Switchable to Grid View with visual color-coded progress bars.
+  - **Unit Modal (Add/Edit)**: Full instrument unit registration with an integrated **"Scan RFID (MQTT)"** button that triggers hardware scanners and auto-assigns tags.
   - **Transaction History Tab**: Searchable and filterable borrow/return logs with user details, instrument badges, and timestamps.
   - **Maintenance Records Tab**: Complete log of repairs, calibration, technician notes, and a one-click "Bring Back" return button.
   - **Retired Tab**: Dedicated view for decommissioned equipment. Excluded from active counts, with one-click "Reactivate to Available".
-- **User Management**: Add and manage lab operators, assign LF RFID cards, and view borrowing status.
+- **User Management**: Add and manage lab operators, assign RFID cards, trigger **"Scan RFID (MQTT)"** on staff badges, and inspect active borrowing status.
 - **Image Management**: In-browser image upload, thumbnail rendering, full-screen lightbox preview, and direct image downloads.
 - **Theme Switcher**: Instant toggle between Dark and Light color themes.
 - **API Configuration**: Easily change the target backend API host on the fly from the UI settings modal.
