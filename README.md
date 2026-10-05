@@ -36,6 +36,7 @@ The frontend and backend run as **two decoupled, independent services**:
   - [Running the Services](#running-the-services)
   - [Building for Production](#building-for-production)
 - [Frontend Dashboard Overview](#-frontend-dashboard-overview)
+- [Module Integration Guide (Merge into Existing Project)](./MODULE_INTEGRATION_GUIDE.md)
 - [License](#-license)
 
 ---
