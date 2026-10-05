@@ -1,18 +1,40 @@
 <template>
   <div id="app">
+    <!-- ── Mobile Sidebar Backdrop ── -->
+    <div
+      v-if="isMobileSidebarOpen"
+      class="sidebar-backdrop"
+      @click="isMobileSidebarOpen = false"
+    ></div>
+
     <!-- ── Sidebar ── -->
-    <aside id="sidebar">
+    <aside id="sidebar" :class="{ 'mobile-open': isMobileSidebarOpen }">
       <!-- Brand -->
-      <div style="height: var(--header-h); display: flex; align-items: center; padding: 0 16px; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
-        <div style="width: 26px; height: 26px; border-radius: 6px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+      <div style="height: var(--header-h); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 26px; height: 26px; border-radius: 6px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+            </svg>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 6px;">
+            <span style="font-weight: 700; font-size: 14px; letter-spacing: 0.02em; color: var(--text);">ES-Hub</span>
+            <span class="mono" style="font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: var(--accent-bg); color: var(--accent);">VUE</span>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button
+          class="btn btn-icon mobile-sidebar-close"
+          title="Close sidebar"
+          aria-label="Close navigation sidebar"
+          @click="isMobileSidebarOpen = false"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
-        </div>
-        <div style="display: flex; align-items: baseline; gap: 6px;">
-          <span style="font-weight: 700; font-size: 14px; letter-spacing: 0.02em; color: var(--text);">ES-Hub</span>
-          <span class="mono" style="font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: var(--accent-bg); color: var(--accent);">VUE</span>
-        </div>
+        </button>
       </div>
 
       <!-- Nav list -->
@@ -137,11 +159,25 @@
     <div id="main">
       <!-- Header -->
       <header id="header">
-        <span style="font-size: 13.5px; font-weight: 600; color: var(--text);">{{ pageTitle }}</span>
+        <!-- Mobile Menu Toggle Button -->
+        <button
+          class="btn btn-icon mobile-menu-btn"
+          title="Open navigation menu"
+          aria-label="Open navigation menu"
+          @click="isMobileSidebarOpen = !isMobileSidebarOpen"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+
+        <span class="header-page-title">{{ pageTitle }}</span>
         <div style="flex: 1;"></div>
 
-        <!-- Global Search input -->
-        <div style="position: relative; width: 260px;">
+        <!-- Global Search input (hidden on small mobile screens) -->
+        <div class="header-search-wrap">
           <svg style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input
             v-model="globalSearchText"
@@ -231,6 +267,7 @@ const { user, isAuthenticated, isAdmin, showLoginModal, showChangePasswordModal,
 const currentPage = ref('dashboard');
 const globalSearchText = ref('');
 const apiConfigOpen = ref(false);
+const isMobileSidebarOpen = ref(false);
 
 const dashboardViewRef = ref(null);
 const instrumentsViewRef = ref(null);
@@ -273,6 +310,7 @@ const hostDisplay = computed(() => {
 });
 
 function navigate(page) {
+  isMobileSidebarOpen.value = false;
   if (!isAdmin.value && (page === 'users' || page === 'rfids')) {
     currentPage.value = 'dashboard';
     return;
@@ -286,6 +324,7 @@ function navigate(page) {
 }
 
 function onDashboardNavigate(page, subTab, searchTerm) {
+  isMobileSidebarOpen.value = false;
   if (!isAdmin.value && (page === 'users' || page === 'rfids')) {
     currentPage.value = 'dashboard';
     return;

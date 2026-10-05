@@ -6,8 +6,9 @@
         <!-- Search input -->
         <input
           v-model="searchQuery"
+          class="toolbar-search-input"
           placeholder="Search user name or RFID..."
-          style="font-size: 12px; width: 240px; padding: 6px 10px;"
+          style="font-size: 12px; padding: 6px 10px;"
           @input="onSearchInput"
         />
 

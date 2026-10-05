@@ -2,7 +2,7 @@
   <div class="card inst-group-card" :class="{ expanded: isExpanded }">
     <!-- Group Header -->
     <div class="inst-group-header" @click="emit('toggle-expand', group.id)">
-      <div style="display: flex; align-items: center; gap: 14px;">
+      <div class="inst-group-info" style="display: flex; align-items: center; gap: 14px;">
         <button class="btn btn-sm btn-icon inst-group-chevron" style="pointer-events: none;" aria-label="Expand or collapse">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"></polyline>
@@ -49,7 +49,7 @@
       </div>
 
       <!-- Availability & Actions -->
-      <div style="display: flex; align-items: center; gap: 16px;">
+      <div class="inst-group-meta-actions" style="display: flex; align-items: center; gap: 16px;">
         <div style="text-align: right;">
           <div style="display: flex; align-items: center; gap: 6px; justify-content: flex-end;">
             <span

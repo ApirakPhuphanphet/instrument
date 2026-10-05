@@ -93,8 +93,9 @@
           <!-- Search input -->
           <input
             v-model="searchQuery"
+            class="toolbar-search-input"
             placeholder="Search group, brand, barcode, rfid..."
-            style="font-size: 12px; width: 240px;"
+            style="font-size: 12px;"
             @input="onSearchInput"
           />
 
