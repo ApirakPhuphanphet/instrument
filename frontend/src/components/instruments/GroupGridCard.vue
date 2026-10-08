@@ -3,7 +3,7 @@
     <!-- Top Image Header -->
     <div
       v-if="group.image_url"
-      style="width: 100%; height: 130px; background: #0b0f19; border-bottom: 1px solid var(--border); position: relative; overflow: hidden;"
+      style="width: 100%; height: 130px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); position: relative; overflow: hidden;"
     >
       <img
         :src="resolveImageUrl(group.image_url)"
@@ -15,7 +15,7 @@
         :href="`${resolveImageUrl(group.image_url)}/download`"
         download
         class="btn btn-sm"
-        style="position: absolute; top: 8px; right: 8px; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px); padding: 4px 8px; font-size: 11px; border-color: rgba(255,255,255,0.2);"
+        style="position: absolute; top: 8px; right: 8px; background: rgba(15,23,42,0.75); backdrop-filter: blur(4px); padding: 4px 8px; font-size: 11px; border-color: rgba(255,255,255,0.2); color: #fff;"
         title="Download image"
         @click.stop
       >
@@ -35,7 +35,7 @@
           <h4 style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px;">
             {{ group.name }}
           </h4>
-          <span v-if="group.brand" style="font-size: 11.5px; color: #818cf8; font-weight: 500;">
+          <span v-if="group.brand" class="badge badge-brand" style="font-size: 11px; font-weight: 600;">
             {{ group.brand }}{{ group.model ? ` · ${group.model}` : '' }}
           </span>
         </div>

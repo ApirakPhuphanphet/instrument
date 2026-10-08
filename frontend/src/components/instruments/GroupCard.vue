@@ -12,7 +12,7 @@
         <!-- Group Thumbnail -->
         <div
           v-if="group.image_url"
-          style="width: 44px; height: 44px; border-radius: 6px; overflow: hidden; background: #0b0f19; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+          style="width: 44px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--bg-elevated); border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;"
           title="Click to preview image"
           @click.stop="openImagePreview(group.image_url, '', group.name)"
         >
@@ -36,8 +36,8 @@
             <span style="font-size: 15px; font-weight: 700; color: var(--text);">{{ group.name }}</span>
             <span
               v-if="group.brand"
-              class="badge"
-              style="background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); font-size: 11px; font-weight: 600;"
+              class="badge badge-brand"
+              style="font-size: 11px; font-weight: 600;"
             >
               {{ group.brand }}{{ group.model ? ` · ${group.model}` : '' }}
             </span>
@@ -174,7 +174,7 @@
                 <!-- Unit Image / Thumbnail -->
                 <div
                   v-if="unit.image_url"
-                  style="width: 28px; height: 28px; border-radius: 6px; overflow: hidden; background: #0b0f19; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                  style="width: 28px; height: 28px; border-radius: 6px; overflow: hidden; background: var(--bg-elevated); border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;"
                   title="Click to preview image"
                   @click="openImagePreview(unit.image_url, '', unit.name)"
                 >
