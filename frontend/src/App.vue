@@ -17,10 +17,6 @@
               <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
             </svg>
           </div>
-          <div style="display: flex; align-items: baseline; gap: 6px;">
-            <span style="font-weight: 700; font-size: 14px; letter-spacing: 0.02em; color: var(--text);">ES-Hub</span>
-            <span class="mono" style="font-size: 9.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: var(--accent-bg); color: var(--accent);">VUE</span>
-          </div>
         </div>
 
         <!-- Mobile Close Button -->
