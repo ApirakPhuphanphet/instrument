@@ -430,10 +430,13 @@ All tables implement soft-delete support (`deletedAt`) and timezone-aware timest
    ```bash
    cp .env.example .env
    ```
-   Edit `backend/.env` with your PostgreSQL database credentials and MQTT settings:
+   Edit `backend/.env` with your PostgreSQL database credentials, JWT secret, and MQTT settings:
    ```env
    DATABASE_URL=postgresql://postgres:password@localhost:5432/coop
    PORT=3000
+
+   # Authentication & JWT Configuration
+   JWT_SECRET=eshub-instrument-tracking-secret-key-2026
 
    # MQTT Broker Configuration (Free Public Broker: EMQX)
    MQTT_BROKER_URL=mqtt://broker.emqx.io:1883
